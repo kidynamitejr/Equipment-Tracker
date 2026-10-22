@@ -31,13 +31,13 @@ All formulas live in [`js/calc.js`](js/calc.js) and are explained on the **Data 
 
 ## Running it
 
-It is a static site with no build step. Serve the folder with any web server, for example:
+It is a static site with no build step. With [Node.js](https://nodejs.org) installed, run this from the project folder:
 
 ```
-python3 -m http.server 8000
+npm run dev
 ```
 
-then open http://localhost:8000. Opening `index.html` directly from disk will not work because browsers block
+then open http://localhost:5173. There is nothing to install first; the dev server has no dependencies. Opening `index.html` directly from disk will not work because browsers block
 JavaScript modules on `file://` URLs.
 
 ### GitHub Pages
