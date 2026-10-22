@@ -623,3 +623,32 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
   table.data.fit td[data-label="Vendor"] { min-width: 60px; }
   table.data.fit .desc { min-width: 100px; }
 }
+
+/* Units: per-piece rows inside the equipment form, and the unit picker on requests. */
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.section-head [data-unit-count] { font-size: 12.5px; }
+.units-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+table.units { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.units th { text-align: left; font-size: 11.5px; font-weight: 500; color: var(--text-3); padding: 8px 6px; background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.units td { padding: 5px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table.units tr:last-child td { border-bottom: 0; }
+table.units input, table.units select { height: 32px; font-size: 13px; padding: 0 8px; min-width: 0; width: 100%; }
+table.units input[name^="u-equipNo"] { font-family: var(--mono); font-size: 12.5px; min-width: 96px; }
+table.units input[name^="u-model"] { min-width: 96px; }
+table.units input[name^="u-serial"] { min-width: 120px; }
+table.units input[type=date] { min-width: 132px; }
+table.units select { min-width: 92px; }
+table.units .unit-no { width: 26px; text-align: center; color: var(--text-3); font-variant-numeric: tabular-nums; padding-left: 8px; }
+table.units .icon-btn { width: 28px; height: 28px; }
+.units-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.units-bulk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); }
+.units-bulk input { width: 64px; height: 32px; }
+.unit-pick { border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 236px; overflow-y: auto; }
+.unit-pick label { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; margin: 0; }
+.unit-pick label:last-child { border-bottom: 0; }
+.unit-pick .unit-all { background: var(--surface-2); position: sticky; top: 0; z-index: 1; }
+.unit-pick .disabled { opacity: .55; cursor: not-allowed; }
+.unit-pick .muted { font-size: 12px; }
+.req-units { margin-top: 6px; font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.unit-pick input[type=checkbox] { width: 16px; height: 16px; min-width: 0; padding: 0; margin: 0; flex: none; box-shadow: none; accent-color: var(--accent); }
+.unit-pick .mono { white-space: nowrap; min-width: 84px; }

@@ -1,7 +1,7 @@
 // Job workspace: summary KPIs and tabs for equipment, COE, calendar, requests, details and activity.
 
 import * as store from '../store.js';
-import { jobMetrics, equipmentMetrics, combinedSchedule, dailySchedule } from '../calc.js';
+import { jobMetrics, equipmentMetrics, combinedSchedule, dailySchedule, unitsOf } from '../calc.js';
 import { esc, money, compactMoney, fmtDate, fmtShort, pct, today, addDays, debounce } from '../util.js';
 import { icon, canEdit, statusPill, openModal, help } from '../ui.js';
 import { openJobForm } from './jobForm.js';
@@ -135,7 +135,8 @@ export function filterEquipment(list, f) {
   const t = today(), soon = addDays(t, 7);
   const q = f.q.toLowerCase();
   return list.map(e => ({ e, m: equipmentMetrics(e) })).filter(({ e, m }) => {
-    if (q && ![e.equipNo, e.description, e.vendor, e.po, e.serial, e.model, e.manufacturer, e.costCode, e.notes].join(' ').toLowerCase().includes(q)) return false;
+    if (q && ![e.equipNo, e.description, e.vendor, e.po, e.serial, e.model, e.manufacturer, e.costCode, e.notes,
+      ...unitsOf(e).flatMap(u => [u.equipNo, u.model, u.serial])].join(' ').toLowerCase().includes(q)) return false;
     if (f.status === 'active' && e.status === 'off') return false;
     if (['on', 'off', 'forecast'].includes(f.status) && e.status !== f.status) return false;
     if (f.vendor && e.vendor !== f.vendor) return false;
@@ -195,13 +196,13 @@ function renderEquipmentTable(el, job, list, f, { coe = false, onOpen }) {
         : '<span class="muted">—</span>';
     return `<tr data-eq="${e.id}">
               <td data-label="Request" class="col-req">${reqCell}</td>
-              <td data-label="Equip #" class="col-eqno mono strong">${esc(e.equipNo || '—')}</td>
+              <td data-label="Equip #" class="col-eqno mono strong">${m.units.total > 1 ? `<div class="cell-stack"><span>${esc(e.equipNo || '—')}</span><span class="secondary">+${m.units.total - 1} more</span></div>` : esc(e.equipNo || '—')}</td>
               <td data-label="Description" class="desc" title="${esc(e.description)}">${esc(e.description)}</td>
               <td data-label="PO #" class="mono">${esc(e.po || '—')}</td>
               <td data-label="Cost code" class="mono">${esc(e.costCode || '—')}</td>
               <td data-label="Vendor">${esc(e.vendor || '—')}</td>
-              <td data-label="Qty" class="num">${esc(e.qty)}</td>
-              <td data-label="Status">${statusPill(e.status)}</td>
+              <td data-label="Qty" class="num">${m.units.off && e.status === 'on' ? `<div class="cell-stack"><span>${m.units.on}</span><span class="secondary">of ${m.units.total}</span></div>` : esc(e.qty)}</td>
+              <td data-label="Status">${m.units.off && e.status === 'on' ? `<div class="cell-stack">${statusPill('on')}<span class="secondary">${m.units.off} off rent</span></div>` : statusPill(e.status)}</td>
               <td data-label="On rent" class="date" title="${fmtDate(e.onRentDate)}">${fmtShort(e.onRentDate)}</td>
               <td data-label="Off rent" class="date" title="${fmtDate(m.end)}"><div class="cell-stack"><span>${fmtShort(m.end)}</span>${dueSoon ? '<span class="tag tag-warn">≤ 7 days</span>' : `<span class="secondary">${e.status === 'off' ? 'Actual' : e.forecastOffDate ? 'Forecast' : 'No forecast'}</span>`}</div></td>
               <td data-label="Days" class="m-hide num">${m.eacDays}</td>

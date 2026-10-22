@@ -1,7 +1,7 @@
 // Excel (SheetJS) and PDF (jsPDF + AutoTable) exports.
 
 import * as store from './store.js';
-import { equipmentMetrics, jobMetrics, combinedSchedule } from './calc.js';
+import { equipmentMetrics, jobMetrics, combinedSchedule, unitsOf, unitEnd } from './calc.js';
 import { fmtDate, money, today, pct } from './util.js';
 import { toast } from './ui.js';
 
@@ -63,6 +63,14 @@ function eqSheet(list) {
   });
 }
 
+// One row per unit, so every piece's equipment #, model # and serial # is listed even on a multi-quantity line.
+function unitSheet(list) {
+  const rows = [['PO #', 'Line description', 'Unit', 'Equipment #', 'Model #', 'Serial #', 'Status', 'On rent', 'Off rent (actual or forecast)', 'COE']];
+  list.forEach(e => unitsOf(e).forEach((u, i) => rows.push([e.po || '', e.description || '', i + 1, u.equipNo || '', u.model || '', u.serial || '',
+    e.status === 'forecast' ? 'Forecasted' : u.status === 'off' || e.status === 'off' ? 'Off rent' : 'On rent', e.onRentDate || '', unitEnd(e, u), e.coe ? 'Yes' : 'No'])));
+  return sheet(rows, { widths: [12, 34, 6, 14, 16, 20, 11, 12, 14, 6] });
+}
+
 export function exportJobExcel(job) {
   if (!libsReady('xlsx')) return;
   const all = store.equipmentForJob(job.id);
@@ -99,6 +107,7 @@ export function exportJobExcel(job) {
   XLSX.utils.book_append_sheet(wb, ws, 'Summary');
   XLSX.utils.book_append_sheet(wb, eqSheet(all.filter(e => !e.coe)), 'Equipment');
   XLSX.utils.book_append_sheet(wb, eqSheet(all.filter(e => e.coe)), 'COE');
+  XLSX.utils.book_append_sheet(wb, unitSheet(all), 'Units');
 
   const sched = [...combinedSchedule(all)].sort((a, b) => a[0].localeCompare(b[0]));
   const daily = [['Date', 'Cost', 'Profit', 'Items accruing', 'Type'], ...sched.map(([d, e]) => [d, round(e.cost), round(e.profit), e.items, d > today() ? 'Forecast' : 'Incurred'])];

@@ -38,7 +38,7 @@ export function renderSettings(app) {
             <li>Each full 28-day billing month is charged at the monthly rate.</li>
             <li>For the remaining days, more than 3 weeks is charged one monthly rate. Otherwise each full week is charged the weekly rate.</li>
             <li>Leftover days: more than 3 days is charged one weekly rate; 1 to 3 days are charged the daily rate each.</li>
-            <li>Rates are per unit and multiplied by quantity.</li>
+            <li>Rates are per unit. Each unit on a line bills its own days, so units taken off rent early stop billing while the rest continue.</li>
           </ul>
           <h4 style="color:var(--text);font-size:13.5px;margin-bottom:6px">Cost and profit</h4>
           <ul style="margin:0 0 14px;padding-left:18px">

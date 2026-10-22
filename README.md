@@ -14,7 +14,7 @@ forecast date changes, and transfers; procurement completes them after contactin
 - **Cost tracking** per equipment (rental cost EAC, ITD, profit to date, monthly cost) and per job (EAC and ITD days
   with dates, EAC and ITD cost with profit, on-rent count with how many come off within 7 days, monthly cost and profit).
 - **Calendars**: job calendar and per-equipment calendar of daily cost; click a day for the breakdown.
-- **Requests**: off rent, forecast date change, or transfer to another job. Procurement completes them to apply changes.
+- **Requests**: off rent, forecast date change, or transfer to another job, for all or some of a line's units. Procurement completes them to apply changes.
 - **COE tab**: company-owned equipment is kept off the Equipment tab.
 - **Exports**: Excel workbook (summary, equipment, COE, daily costs, requests) and PDF cost report, per job or for all jobs.
 - **Sort and filter** by search, status, vendor, cost code, fuel type, and "off rent within 7 days".
@@ -25,7 +25,9 @@ All formulas live in [`js/calc.js`](js/calc.js) and are explained on the **Data 
 
 - Full 28-day billing months bill at the monthly rate. For the remaining days, more than 3 weeks bills one monthly
   rate; otherwise each full week bills the weekly rate, and leftover days bill a week if more than 3 days, else daily.
-- Base = rental × qty + mob + demob + one-time. Taxes = base × (env % + diesel % + property % + tax rate %).
+- Each PO line holds units, each with its own equipment #, model #, serial #, status and off-rent date. Units bill
+  their own days, so part of a line can come off rent (or transfer) while the rest keep billing.
+- Base = rental for each unit + mob + demob + one-time. Taxes = base × (env % + diesel % + property % + tax rate %).
   Cost = base + taxes. Profit = base × (equipment markup % + fuel markup %).
 - Monthly cost = cost accrued over the past 30 days.
 

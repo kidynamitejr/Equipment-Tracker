@@ -1,11 +1,12 @@
 // Data layer. Everything is kept in one in-memory database that is persisted to localStorage.
 // To move to a shared backend (e.g. Supabase), replace load/persist and keep this module's API.
 
-import { uid, today, addDays } from './util.js';
+import { uid, today, addDays, maxDate, num } from './util.js';
+import { unitsOf } from './calc.js';
 
 const KEY = 'equipment-tracker.v1';
 // Bump when the sample data changes. Browsers still holding an untouched older sample set get the new one.
-const DEMO_VERSION = 3;
+const DEMO_VERSION = 4;
 const OLD_DEMO_JOBS = ['24-1187', '25-0214'];
 // Sample job numbers moved to the 1000XXX format. Saved data still using the old numbers is renamed on load.
 const RENAMED_JOBS = { '24-1187': '1000482', '25-0214': '1000639', '25-0388': '1000715', '25-0412': '1000758', '26-0031': '1000893', '24-1302': '1000517' };
@@ -27,10 +28,38 @@ function load() {
   if (!data || untouchedOldDemo || (data.demoVersion && data.demoVersion < DEMO_VERSION && !data.activity.length)) {
     data = seed();
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
-  } else if (renameOldJobNumbers(data)) {
+  } else if (renameOldJobNumbers(data) | addUnits(data)) {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
   }
   return data;
+}
+
+// Lines saved before per-unit tracking get one unit per quantity.
+function addUnits(data) {
+  let changed = false;
+  data.equipment.forEach(e => {
+    if (Array.isArray(e.units) && e.units.length) return;
+    e.units = unitsOf(e).map(u => ({ ...u, id: uid('unit') }));
+    changed = true;
+  });
+  return changed;
+}
+
+// Keeps line-level fields in step with its units: quantity, the first unit's numbers, and off-rent status
+// once every unit is off.
+export function syncUnits(eq) {
+  const units = eq.units || [];
+  eq.qty = units.length;
+  if (units[0]) Object.assign(eq, { equipNo: units[0].equipNo || '', model: units[0].model || '', serial: units[0].serial || '' });
+  if (eq.status === 'forecast' || !units.length) return eq;
+  if (units.every(u => u.status === 'off')) {
+    eq.status = 'off';
+    eq.offRentDate = units.reduce((d, u) => maxDate(d, u.offRentDate), '') || eq.offRentDate || today();
+  } else if (eq.status === 'off') {
+    eq.status = 'on';
+    eq.offRentDate = '';
+  }
+  return eq;
 }
 
 function renameOldJobNumbers(data) {
@@ -90,6 +119,8 @@ export const equipment = id => db.equipment.find(e => e.id === id);
 
 export function saveEquipment(data) {
   const now = new Date().toISOString();
+  if (!data.units?.length) data.units = unitsOf(data).map(u => ({ ...u, id: uid('unit') }));
+  syncUnits(data);
   if (data.id) {
     Object.assign(equipment(data.id), data, { updatedAt: now });
     log(data.jobId, `Equipment ${data.equipNo || data.description} updated`);
@@ -116,34 +147,62 @@ export const requestsForJob = jobId => db.requests.filter(r => r.jobId === jobId
 export const allRequests = () => db.requests.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 export const request = id => db.requests.find(r => r.id === id);
 export const openRequestFor = equipmentId => db.requests.find(r => r.equipmentId === equipmentId && r.status === 'pending');
+export const openRequestsFor = equipmentId => db.requests.filter(r => r.equipmentId === equipmentId && r.status === 'pending');
+
+// Units a request covers. Requests made before per-unit tracking cover every unit still on rent.
+export function requestUnits(r, eq = equipment(r.equipmentId)) {
+  if (!eq) return [];
+  const units = unitsOf(eq);
+  if (Array.isArray(r.unitIds) && r.unitIds.length) return units.filter(u => r.unitIds.includes(u.id));
+  return units.filter(u => u.status !== 'off');
+}
+
+// Units on rent that no pending request already covers, so a new request can include them.
+export function requestableUnits(eq) {
+  const taken = new Set(openRequestsFor(eq.id).flatMap(r => requestUnits(r, eq).map(u => u.id)));
+  return eq.status === 'off' ? [] : unitsOf(eq).filter(u => u.status !== 'off' && !taken.has(u.id));
+}
+
+export const unitLabel = (u, i) => u.equipNo || `Unit ${i + 1}`;
 
 export function createRequest(data) {
   const r = { ...data, id: uid('req'), status: 'pending', createdAt: new Date().toISOString() };
   db.requests.push(r);
   const eq = equipment(r.equipmentId);
-  log(r.jobId, `${REQUEST_LABELS[r.type]} requested for ${eq?.equipNo || eq?.description || 'equipment'} by ${r.requestedBy}`);
+  const n = r.unitIds?.length, total = eq ? unitsOf(eq).length : 0;
+  const what = n && n < total ? `${n} of ${total} units of ${eq.description}` : eq?.equipNo || eq?.description || 'equipment';
+  log(r.jobId, `${REQUEST_LABELS[r.type]} requested for ${what} by ${r.requestedBy}`);
   persist();
   return r.id;
 }
 
 export const REQUEST_LABELS = { offrent: 'Off rent', forecast: 'Forecast date change', transfer: 'Transfer' };
 
-// Applies a request's change to the equipment and closes it.
+// Applies a request's change to the units it covers and closes it.
 export function completeRequest(id, { completedBy, effectiveDate, poAmount, po, note }) {
   const r = request(id);
   const eq = equipment(r.equipmentId);
   const now = new Date().toISOString();
+  let what = eq?.equipNo || eq?.description || 'equipment';
   if (eq) {
+    eq.units = unitsOf(eq);
+    const chosen = requestUnits(r, eq);
+    const ids = new Set(chosen.map(u => u.id));
+    const onUnits = eq.units.filter(u => u.status !== 'off');
+    const all = onUnits.every(u => ids.has(u.id));
+    if (chosen.length < eq.units.length) what = `${chosen.length} of ${eq.units.length} units of ${eq.description}`;
     if (r.type === 'offrent') {
-      Object.assign(eq, { status: 'off', offRentDate: effectiveDate, forecastOffDate: effectiveDate, updatedAt: now });
+      chosen.forEach(u => Object.assign(u, { status: 'off', offRentDate: effectiveDate }));
     } else if (r.type === 'forecast') {
-      Object.assign(eq, { forecastOffDate: effectiveDate, updatedAt: now });
+      if (all) { eq.forecastOffDate = effectiveDate; chosen.forEach(u => { u.forecastOffDate = ''; }); }
+      else chosen.forEach(u => { u.forecastOffDate = effectiveDate; });
       if (poAmount !== '' && poAmount != null) eq.poAmount = poAmount;
       if (po) eq.po = po;
     } else if (r.type === 'transfer') {
-      // The unit moves rather than returning to the vendor: demobilization follows it to the new job.
-      const demob = eq.demobCost;
-      Object.assign(eq, { status: 'off', offRentDate: effectiveDate, forecastOffDate: effectiveDate, demobCost: 0, updatedAt: now });
+      // The units move rather than returning to the vendor: their share of demobilization follows them.
+      const share = all ? num(eq.demobCost) : Math.round(num(eq.demobCost) * chosen.length / eq.units.length * 100) / 100;
+      eq.demobCost = Math.round((num(eq.demobCost) - share) * 100) / 100;
+      chosen.forEach(u => Object.assign(u, { status: 'off', offRentDate: effectiveDate }));
       const target = job(r.targetJobId);
       const copy = {
         ...eq,
@@ -153,7 +212,8 @@ export function completeRequest(id, { completedBy, effectiveDate, poAmount, po, 
         onRentDate: effectiveDate,
         offRentDate: '',
         forecastOffDate: r.targetForecastDate || '',
-        mobCost: 0, oneTimeCost: 0, demobCost: demob,
+        units: chosen.map(u => ({ ...u, id: uid('unit'), status: 'on', offRentDate: '', forecastOffDate: '' })),
+        mobCost: 0, oneTimeCost: 0, demobCost: share,
         po: po || eq.po,
         poAmount: poAmount !== '' && poAmount != null ? poAmount : eq.poAmount,
         transferredFrom: eq.jobId,
@@ -164,12 +224,15 @@ export function completeRequest(id, { completedBy, effectiveDate, poAmount, po, 
         copy.equipMarkup = target.markupEquipment;
         copy.taxRate = target.salesTax;
       }
+      syncUnits(copy);
       db.equipment.push(copy);
-      log(r.targetJobId, `Equipment ${eq.equipNo || eq.description} transferred in from job ${job(eq.jobId)?.number || ''}`);
+      log(r.targetJobId, `${what} transferred in from job ${job(eq.jobId)?.number || ''}`);
     }
+    syncUnits(eq);
+    eq.updatedAt = now;
   }
   Object.assign(r, { status: 'completed', completedAt: now, completedBy, effectiveDate, completionNote: note || '' });
-  log(r.jobId, `${REQUEST_LABELS[r.type]} request for ${eq?.equipNo || eq?.description || 'equipment'} completed`);
+  log(r.jobId, `${REQUEST_LABELS[r.type]} request for ${what} completed`);
   persist();
 }
 
@@ -308,6 +371,19 @@ function seed() {
     base(j6, { po: 'PO-119790', description: 'Light Tower (Diesel)', equipNo: 'LT-0810', vendor: 'United Rentals', qty: 4, rateDaily: 75, rateWeekly: 210, rateMonthly: 520, onRentDate: d(-120), forecastOffDate: d(5), costCode: '06-520-160', fuelType: 'standard', fuelMarkup: 4, poAmount: 9500 }),
     base(j6, { po: 'PO-119802', description: 'Vacuum Truck', equipNo: 'VT-2205', vendor: 'Clean Harbors', rateDaily: 1050, rateWeekly: 3150, rateMonthly: 8400, onRentDate: d(-9), forecastOffDate: d(12), mobCost: 600, demobCost: 600, costCode: '06-560-100', fuelType: 'high', fuelMarkup: 7, envTax: 2, poAmount: 9000 }),
   );
+  // Give every sample unit its own equipment # and serial #, e.g. SL-1903, SL-1904, ...
+  equipment.forEach(e => {
+    const m = /^(.*?)(\d+)$/.exec(e.equipNo || '');
+    e.units = Array.from({ length: e.qty || 1 }, (_, i) => ({
+      id: uid('unit'),
+      equipNo: m && i ? m[1] + String(+m[2] + i).padStart(m[2].length, '0') : e.equipNo,
+      model: e.model, serial: e.serial ? (i ? e.serial.replace(/\d{3}$/, x => String(+x + i * 7).padStart(3, '0')) : e.serial) : '',
+      status: e.status === 'off' ? 'off' : 'on', offRentDate: e.status === 'off' ? e.offRentDate : '', forecastOffDate: '',
+    }));
+  });
+  // One partial off rent so the sample shows units coming off a line while the rest stay on.
+  const welders = equipment.find(e => e.equipNo === 'WM-3001');
+  if (welders) welders.units.slice(-2).forEach(u => Object.assign(u, { status: 'off', offRentDate: d(-6) }));
   const find = no => equipment.find(e => e.equipNo === no);
   const ago = h => new Date(Date.now() - 3600e3 * h).toISOString();
   requests.push(

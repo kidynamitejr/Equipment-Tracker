@@ -1,23 +1,47 @@
 // Field requests (off rent / forecast change / transfer) and the procurement request queue.
 
 import * as store from '../store.js';
-import { equipmentMetrics } from '../calc.js';
+import { equipmentMetrics, unitsOf } from '../calc.js';
 import { esc, money, fmtDate, today, addDays, num } from '../util.js';
 import { openModal, readForm, validate, toast, icon, canEdit, getUserName, setUserName, statusPill, confirmDialog } from '../ui.js';
 
 const TYPE_ICON = { offrent: 'truck', forecast: 'calendar', transfer: 'swap' };
 
+// Unit numbers for display, e.g. "SL-1903, SL-1904 (2 of 6)".
+export function unitsSummary(eq, units) {
+  const all = unitsOf(eq);
+  const names = units.map(u => store.unitLabel(u, all.findIndex(x => x.id === u.id)));
+  return `${names.length > 6 ? names.slice(0, 6).join(', ') + ` +${names.length - 6} more` : names.join(', ')}${all.length > 1 ? ` (${units.length} of ${all.length})` : ''}`;
+}
+
 export function openRequestForm(eq) {
   const job = store.job(eq.jobId);
   const otherJobs = store.jobs().filter(j => j.id !== eq.jobId);
+  const all = unitsOf(eq);
+  const free = store.requestableUnits(eq);
+  if (!free.length) { toast('Every unit on this line is off rent or already in a pending request.', 'error'); return; }
+  const picker = all.length > 1 ? `
+      <div class="field" style="margin-bottom:14px">
+        <label>Which units? <span class="reqd">*</span> <span class="muted" style="font-weight:400" data-unit-sel></span></label>
+        <div class="unit-pick">
+          <label class="unit-all"><input type="checkbox" data-all checked> <strong>All available units</strong></label>
+          ${all.map((u, i) => {
+    const ok = free.includes(u);
+    const why = u.status === 'off' ? 'Off rent' : !ok ? 'In a pending request' : '';
+    return `<label class="unit-opt ${ok ? '' : 'disabled'}"><input type="checkbox" name="unit" value="${esc(u.id)}" ${ok ? 'checked' : 'disabled'}>
+              <span class="mono strong">${esc(store.unitLabel(u, i))}</span><span class="muted">${esc([u.model, u.serial && `S/N ${u.serial}`].filter(Boolean).join(' · ') || '')}${why ? ` · ${why}` : ''}</span></label>`;
+  }).join('')}
+        </div>
+      </div>` : '';
   const body = `
     <div class="info-box">
-      <div class="row"><span>Equipment</span><strong>${esc(eq.equipNo || '—')} · ${esc(eq.description)}</strong></div>
+      <div class="row"><span>Equipment</span><strong>${all.length > 1 ? `${all.length} × ` : `${esc(eq.equipNo || '—')} · `}${esc(eq.description)}</strong></div>
       <div class="row"><span>Vendor / PO</span><span>${esc(eq.vendor || '—')} · ${esc(eq.po || '—')}</span></div>
       <div class="row"><span>On rent since</span><span>${fmtDate(eq.onRentDate)}</span></div>
       <div class="row"><span>Current forecast off rent</span><span>${fmtDate(eq.forecastOffDate)}</span></div>
     </div>
     <form id="req-form" novalidate data-track>
+      ${picker}
       <div class="field" style="margin-bottom:14px">
         <label>Request type</label>
         <div class="type-cards">
@@ -50,10 +74,25 @@ export function openRequestForm(eq) {
         if (type !== 'forecast' && d.value !== today() && d.dataset.touched !== '1') d.value = today();
       };
       form.querySelector('[name=requestedDate]').addEventListener('input', e => { e.target.dataset.touched = '1'; });
+      const boxes = [...form.querySelectorAll('[name=unit]:not(:disabled)')];
+      const countSel = () => {
+        const n = boxes.filter(b => b.checked).length;
+        const lbl = el.querySelector('[data-unit-sel]');
+        if (lbl) lbl.textContent = `${n} of ${boxes.length} selected`;
+        const allBox = form.querySelector('[data-all]');
+        if (allBox) { allBox.checked = n === boxes.length; allBox.indeterminate = n > 0 && n < boxes.length; }
+      };
+      form.querySelector('[data-all]')?.addEventListener('change', e => { boxes.forEach(b => { b.checked = e.target.checked; }); countSel(); });
+      boxes.forEach(b => b.addEventListener('change', countSel));
+      countSel();
       form.addEventListener('change', e => { if (e.target.name === 'type') sync(); });
       el.querySelector('[data-submit]').addEventListener('click', () => {
         if (!validate(form)) return;
         const v = readForm(form);
+        delete v.unit;
+        const unitIds = all.length > 1 ? boxes.filter(b => b.checked).map(b => b.value) : free.map(u => u.id);
+        if (!unitIds.length) { toast('Pick at least one unit.', 'error'); return; }
+        v.unitIds = unitIds;
         if (v.type !== 'transfer') { delete v.targetJobId; delete v.targetForecastDate; }
         if (v.requestedDate < eq.onRentDate) { toast('Date is before the on-rent date', 'error'); return; }
         setUserName(v.requestedBy);
@@ -71,6 +110,8 @@ export function requestCard(r, { compact = false, showJob = false } = {}) {
   const target = r.targetJobId ? store.job(r.targetJobId) : null;
   const m = eq ? equipmentMetrics(eq) : null;
   const done = r.status !== 'pending';
+  const reqUnits = eq ? store.requestUnits(r, eq) : [];
+  const multi = eq && unitsOf(eq).length > 1;
   const change = r.type === 'offrent' ? `Off rent on ${fmtDate(r.requestedDate)}`
     : r.type === 'forecast' ? `Forecast ${fmtDate(eq?.forecastOffDate && !done ? eq.forecastOffDate : r.previousForecast)} → ${fmtDate(r.requestedDate)}`.replace('— →', '→')
       : `Transfer to ${esc(target ? `${target.number} · ${target.name}` : 'deleted job')} on ${fmtDate(r.requestedDate)}`;
@@ -81,7 +122,7 @@ export function requestCard(r, { compact = false, showJob = false } = {}) {
       <div class="req-head">
         <div>
           <h4><span class="pill type-pill-${r.type}">${icon(TYPE_ICON[r.type], 13)} ${store.REQUEST_LABELS[r.type]}</span>
-            ${eq ? `<a href="javascript:void 0" data-open-eq="${eq.id}">${esc(eq.equipNo || '—')} · ${esc(eq.description)}</a>` : '<span class="muted">Equipment deleted</span>'} ${statusTag}</h4>
+            ${eq ? `<a href="javascript:void 0" data-open-eq="${eq.id}">${multi ? '' : `${esc(eq.equipNo || '—')} · `}${esc(eq.description)}</a>` : '<span class="muted">Equipment deleted</span>'} ${statusTag}</h4>
           <div class="meta">${showJob && job ? `<a href="#/job/${job.id}/requests" class="job-link">Job ${esc(job.number)} · ${esc(job.name)}</a> · ` : ''}Requested by ${esc(r.requestedBy)} · ${new Date(r.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
             ${done ? ` · ${r.status === 'completed' ? 'Completed' : 'Cancelled'} by ${esc(r.completedBy || '—')} ${new Date(r.completedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}` : ''}</div>
         </div>
@@ -89,15 +130,16 @@ export function requestCard(r, { compact = false, showJob = false } = {}) {
           <button class="btn btn-sm btn-ghost" data-cancel="${r.id}">Cancel</button>
           <button class="btn btn-sm btn-primary" data-complete="${r.id}">${icon('check', 14)} Complete request</button></div>` : ''}
       </div>
-      <div class="req-grid" style="padding-bottom:6px"><div class="span-all" style="grid-column:1/-1"><dd class="req-change">${change}</dd></div></div>
+      <div class="req-grid" style="padding-bottom:6px"><div class="span-all" style="grid-column:1/-1"><dd class="req-change">${change}</dd>
+        ${multi && reqUnits.length ? `<dd class="req-units">${icon('truck', 13)} Units: <span class="mono">${esc(unitsSummary(eq, reqUnits))}</span></dd>` : ''}</div></div>
       ${eq && !compact ? `<dl class="req-grid">
         <div><dt>Vendor</dt><dd>${esc(eq.vendor || '—')}</dd></div>
         <div><dt>PO #</dt><dd>${esc(eq.po || '—')}${eq.poAmount ? ` · ${money(eq.poAmount)}` : ''}</dd></div>
-        <div><dt>Quantity</dt><dd>${esc(eq.qty)}</dd></div>
+        <div><dt>Quantity</dt><dd>${multi ? `${m.units.on} of ${m.units.total} on rent` : esc(eq.qty)}</dd></div>
         <div><dt>Cost code</dt><dd>${esc(eq.costCode || '—')}</dd></div>
         <div><dt>Status</dt><dd>${statusPill(eq.status)}</dd></div>
-        <div><dt>Make / model</dt><dd>${esc([eq.manufacturer, eq.model].filter(Boolean).join(' ') || '—')}</dd></div>
-        <div><dt>Serial #</dt><dd>${esc(eq.serial || '—')}</dd></div>
+        <div><dt>Make / model</dt><dd>${esc([eq.manufacturer, [...new Set(reqUnits.map(u => u.model).filter(Boolean))].join(', ') || eq.model].filter(Boolean).join(' ') || '—')}</dd></div>
+        <div><dt>Serial #</dt><dd>${esc(reqUnits.map(u => u.serial).filter(Boolean).join(', ') || eq.serial || '—')}</dd></div>
         <div><dt>On rent</dt><dd>${fmtDate(eq.onRentDate)}</dd></div>
         <div><dt>Current forecast off</dt><dd>${fmtDate(eq.forecastOffDate)}</dd></div>
         <div><dt>Rates (D / W / M)</dt><dd>${money(eq.rateDaily)} / ${money(eq.rateWeekly)} / ${money(eq.rateMonthly)}</dd></div>
@@ -127,8 +169,12 @@ function openCompleteForm(r) {
     forecast: 'Update the PO with the vendor, then enter the new PO amount. The forecast off rent date changes to the date below.',
     transfer: `The equipment goes off rent on this job and on rent at job ${esc(target?.number || '')} on the date below, using that job's markup and tax.`,
   }[r.type];
+  const units = eq ? store.requestUnits(r, eq) : [];
+  const multi = eq && unitsOf(eq).length > 1;
   const body = `
     <p>${intro}</p>
+    ${multi ? `<div class="info-box"><div class="row"><span>Units</span><strong class="mono">${esc(unitsSummary(eq, units))}</strong></div>
+      <div class="row"><span>Stay as they are</span><span>${unitsOf(eq).length - units.length} other unit${unitsOf(eq).length - units.length === 1 ? '' : 's'}</span></div></div>` : ''}
     <form id="complete-form" novalidate>
       <div class="grid g2" style="margin-top:12px">
         <div class="field"><label for="c-date">${r.type === 'forecast' ? 'New forecast off rent date' : r.type === 'transfer' ? 'Transfer date' : 'Actual off rent date'} <span class="reqd">*</span></label>
@@ -143,7 +189,7 @@ function openCompleteForm(r) {
     </form>`;
   openModal({
     title: `Complete ${store.REQUEST_LABELS[r.type].toLowerCase()} request`,
-    subtitle: eq ? `${esc(eq.equipNo || '—')} · ${esc(eq.description)} · ${esc(eq.vendor || '')}` : '',
+    subtitle: eq ? `${multi ? `${units.length} of ${unitsOf(eq).length} ×` : `${esc(eq.equipNo || '—')} ·`} ${esc(eq.description)} · ${esc(eq.vendor || '')}` : '',
     body, size: 'md',
     footer: `<button class="btn btn-ghost" data-close>Back</button><button class="btn btn-primary" data-ok>${icon('check', 15)} Complete &amp; apply changes</button>`,
     onMount: (el, m) => {
@@ -154,7 +200,7 @@ function openCompleteForm(r) {
         if (eq && v.effectiveDate < eq.onRentDate) { toast('Date is before the on-rent date', 'error'); return; }
         if (v.poAmount !== undefined && v.poAmount !== '') v.poAmount = num(v.poAmount);
         setUserName(v.completedBy);
-        if (r.type === 'forecast' && eq) r.previousForecast = eq.forecastOffDate;
+        if (r.type === 'forecast' && eq) r.previousForecast = units[0]?.forecastOffDate || eq.forecastOffDate;
         store.completeRequest(r.id, v);
         m.close();
         toast('Request completed and changes applied');
