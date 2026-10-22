@@ -46,7 +46,7 @@ export function renderJob(app, jobId, tab) {
             <span>${icon('building', 14)} ${esc(job.clientName || '—')}</span>
             <span>PM: ${esc(job.pm || '—')}</span>
             <span>${esc(job.contractType || '')}</span>
-            <span>JDE ${esc(job.jdeId || '—')}</span>
+            <span>JDE ID ${esc(job.jdeId || '—')}</span>
           </div>
         </div>
         <div class="actions">
@@ -66,11 +66,13 @@ export function renderJob(app, jobId, tab) {
         <div class="kpi"><div class="kpi-label">Total EAC days</div><div class="kpi-value">${m.eacDays.toLocaleString()}</div>
           <div class="kpi-foot">${m.start ? `${fmtDate(m.start)} – ${fmtDate(m.end)}` : 'No equipment yet'}</div></div>
         <div class="kpi"><div class="kpi-label">Total ITD days</div><div class="kpi-value">${m.itdDays.toLocaleString()}</div>
-          <div class="kpi-foot">${m.itdEnd ? `${fmtDate(m.start)} – ${fmtDate(m.itdEnd)}` : m.start ? `Starts ${fmtDate(m.start)}` : '—'}</div></div>
+          <div class="kpi-foot">${m.itdEnd ? `${fmtDate(m.start)} – ${fmtDate(m.itdEnd)}` : m.start ? `Starts ${fmtDate(m.start)}` : '—'}</div>
+          <div class="meter" title="${m.eacDays ? Math.round(m.itdDays / m.eacDays * 100) : 0}% of EAC days elapsed"><i style="width:${m.eacDays ? Math.min(100, m.itdDays / m.eacDays * 100).toFixed(1) : 0}%"></i></div></div>
         <div class="kpi"><div class="kpi-label">Total EAC cost</div><div class="kpi-value" title="${money(m.eacCost)}">${compactMoney(m.eacCost)}</div>
           <div class="kpi-foot"><span class="pos">${money(m.eacProfit, true)}</span> EAC profit</div></div>
         <div class="kpi"><div class="kpi-label">Total ITD cost</div><div class="kpi-value" title="${money(m.itdCost)}">${compactMoney(m.itdCost)}</div>
-          <div class="kpi-foot"><span class="pos">${money(m.itdProfit, true)}</span> ITD profit</div></div>
+          <div class="kpi-foot"><span class="pos">${money(m.itdProfit, true)}</span> ITD profit</div>
+          <div class="meter" title="${m.eacCost ? Math.round(m.itdCost / m.eacCost * 100) : 0}% of EAC cost incurred"><i style="width:${m.eacCost ? Math.min(100, m.itdCost / m.eacCost * 100).toFixed(1) : 0}%"></i></div></div>
         <div class="kpi"><div class="kpi-label">On rent equipment</div><div class="kpi-value">${m.onRent}</div>
           <div class="kpi-foot">${m.offSoon ? `<span class="warn">${m.offSoon}</span> coming off rent within 7 days` : 'None coming off within 7 days'}</div></div>
         <div class="kpi"><div class="kpi-label">Monthly cost</div><div class="kpi-value" title="${money(m.monthlyCost)}">${compactMoney(m.monthlyCost)}</div>
@@ -100,12 +102,16 @@ export function renderJob(app, jobId, tab) {
 }
 
 const COLUMNS = [
-  ['equipNo', 'Equipment', (e) => e.equipNo || ''],
-  ['vendor', 'Vendor / PO', e => e.vendor || ''],
+  ['equipNo', 'Equip #', e => e.equipNo || '', 'col-eqno'],
+  ['description', 'Description', e => e.description || ''],
+  ['po', 'PO #', e => e.po || ''],
+  ['costCode', 'Cost code', e => e.costCode || ''],
+  ['vendor', 'Vendor', e => e.vendor || ''],
   ['qty', 'Qty', e => +e.qty || 0, 'num'],
   ['status', 'Status', e => e.status],
   ['onRentDate', 'On rent', e => e.onRentDate || ''],
   ['end', 'Off rent', (e, m) => m.end],
+  ['days', 'Days', (e, m) => m.eacDays, 'num'],
   ['monthly', 'Monthly cost', (e, m) => m.monthlyCost, 'num'],
   ['itd', 'Rental cost ITD', (e, m) => m.itdCost, 'num'],
   ['eac', 'Rental cost EAC', (e, m) => m.eacCost, 'num'],
@@ -162,31 +168,40 @@ function renderEquipmentTable(el, job, list, f, { coe = false, onOpen }) {
       ${rows.length ? `
       <div class="table-wrap"><table class="data">
         <thead><tr>
+          <th class="col-req">Request</th>
           ${COLUMNS.map(([k, l, , cls]) => `<th class="sortable ${cls || ''}" data-sort="${k}">${l}<span class="sort">${f.sort === k ? (f.dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('')}
-          <th></th>
         </tr></thead>
         <tbody>
           ${rows.map(({ e, m }) => {
     const req = store.openRequestFor(e.id);
     const dueSoon = e.status === 'on' && m.end >= t && m.end <= soon;
+    const reqCell = req
+      ? `<span class="tag tag-req" title="${store.REQUEST_LABELS[req.type]} requested">${req.type === 'offrent' ? 'Off rent' : req.type === 'forecast' ? 'Date change' : 'Transfer'} pending</span>`
+      : e.status !== 'off'
+        ? `<button class="btn btn-xs" data-request="${e.id}" title="Request off rent, forecast change, or transfer">${icon('swap', 13)} Request</button>`
+        : '<span class="muted">—</span>';
     return `<tr data-eq="${e.id}">
-              <td><div class="cell-stack"><span class="primary">${esc(e.equipNo || '—')}${req ? `<span class="tag tag-req" title="${store.REQUEST_LABELS[req.type]} requested">${req.type === 'offrent' ? 'Off rent req.' : req.type === 'forecast' ? 'Date change req.' : 'Transfer req.'}</span>` : ''}</span><span class="secondary desc">${esc(e.description)}</span></div></td>
-              <td><div class="cell-stack"><span>${esc(e.vendor || '—')}</span><span class="secondary">${esc(e.po || '—')}${e.costCode ? ` · ${esc(e.costCode)}` : ''}</span></div></td>
+              <td class="col-req">${reqCell}</td>
+              <td class="col-eqno mono strong">${esc(e.equipNo || '—')}</td>
+              <td class="desc" title="${esc(e.description)}">${esc(e.description)}</td>
+              <td class="mono">${esc(e.po || '—')}</td>
+              <td class="mono">${esc(e.costCode || '—')}</td>
+              <td>${esc(e.vendor || '—')}</td>
               <td class="num">${esc(e.qty)}</td>
               <td>${statusPill(e.status)}</td>
-              <td><div class="cell-stack"><span>${fmtDate(e.onRentDate)}</span><span class="secondary">${m.eacDays} days total</span></div></td>
+              <td>${fmtDate(e.onRentDate)}</td>
               <td><div class="cell-stack"><span>${fmtDate(m.end)}${dueSoon ? '<span class="tag tag-warn">≤ 7 days</span>' : ''}</span><span class="secondary">${e.status === 'off' ? 'Actual' : e.forecastOffDate ? 'Forecast' : 'No forecast'}</span></div></td>
+              <td class="num">${m.eacDays}</td>
               <td class="num">${money(m.monthlyCost)}</td>
               <td class="num">${money(m.itdCost)}</td>
               <td class="num">${money(m.eacCost)}</td>
               <td class="num profit">${money(m.itdProfit)}</td>
-              <td>${e.status !== 'off' && !req ? `<button class="btn btn-sm" data-request="${e.id}" title="Request off rent, forecast change, or transfer" aria-label="Request change">${icon('swap', 14)}</button>` : ''}</td>
             </tr>`;
   }).join('')}
         </tbody>
         <tfoot><tr>
-          <td>Total${filtered ? ' (filtered)' : ''}</td><td></td><td class="num">${tot.qty}</td><td colspan="3"></td>
-          <td class="num">${money(tot.mo)}</td><td class="num">${money(tot.itd)}</td><td class="num">${money(tot.eac)}</td><td class="num profit">${money(tot.p)}</td><td></td>
+          <td class="col-req">Total${filtered ? ' (filtered)' : ''}</td><td class="col-eqno"></td><td colspan="4"></td><td class="num">${tot.qty}</td><td colspan="4"></td>
+          <td class="num">${money(tot.mo)}</td><td class="num">${money(tot.itd)}</td><td class="num">${money(tot.eac)}</td><td class="num profit">${money(tot.p)}</td>
         </tr></tfoot>
       </table></div>` : `
       <div class="empty">${icon(coe ? 'building' : 'truck', 36)}
@@ -240,10 +255,10 @@ function showDayBreakdown(job, list, date) {
   openModal({
     title: fmtDate(date), subtitle: `Job ${esc(job.number)} · ${rows.length} item${rows.length === 1 ? '' : 's'} accruing cost${date > today() ? ' (forecast)' : ''}`,
     size: 'lg',
-    body: `<div class="table-wrap"><table class="data"><thead><tr><th>Equipment</th><th>Vendor</th><th class="num">Qty</th><th class="num">Cost</th><th class="num">Profit</th></tr></thead>
-      <tbody>${rows.map(({ e, d }) => `<tr data-eq="${e.id}"><td><div class="cell-stack"><span class="primary">${esc(e.equipNo || '—')}${e.coe ? '<span class="tag">COE</span>' : ''}</span><span class="secondary">${esc(e.description)}</span></div></td>
-        <td>${esc(e.vendor || '—')}</td><td class="num">${esc(e.qty)}</td><td class="num">${money(d.cost)}</td><td class="num profit">${money(d.profit)}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td>Total</td><td></td><td></td><td class="num">${money(total.cost)}</td><td class="num profit">${money(total.profit)}</td></tr></tfoot></table></div>`,
+    body: `<div class="table-wrap"><table class="data"><thead><tr><th>Equip #</th><th>Description</th><th>PO #</th><th>Cost code</th><th class="num">Qty</th><th class="num">Cost</th><th class="num">Profit</th></tr></thead>
+      <tbody>${rows.map(({ e, d }) => `<tr data-eq="${e.id}"><td class="mono strong">${esc(e.equipNo || '—')}${e.coe ? '<span class="tag">COE</span>' : ''}</td><td class="desc">${esc(e.description)}</td>
+        <td class="mono">${esc(e.po || '—')}</td><td class="mono">${esc(e.costCode || '—')}</td><td class="num">${esc(e.qty)}</td><td class="num">${money(d.cost)}</td><td class="num profit">${money(d.profit)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Total</td><td colspan="4"></td><td class="num">${money(total.cost)}</td><td class="num profit">${money(total.profit)}</td></tr></tfoot></table></div>`,
     footer: '<button class="btn" data-close>Close</button>',
     onMount: (el, m) => el.querySelectorAll('tr[data-eq]').forEach(tr => tr.addEventListener('click', () => { m.close(); openEquipment(job.id, tr.dataset.eq, { tab: 'calendar' }); })),
   });

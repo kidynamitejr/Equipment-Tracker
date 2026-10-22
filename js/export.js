@@ -204,16 +204,16 @@ function eqTable(doc, startY, title, list) {
   const body = list.map(e => {
     const m = equipmentMetrics(e);
     t.qty += Number(e.qty) || 0; t.mo += m.monthlyCost; t.itd += m.itdCost; t.eac += m.eacCost; t.p += m.itdProfit;
-    return [e.equipNo || '', e.description || '', e.vendor || '', e.po || '', e.qty, STATUS[e.status], fmtDate(e.onRentDate), fmtDate(m.end), m.eacDays,
+    return [e.equipNo || '', e.description || '', e.po || '', e.costCode || '', e.vendor || '', e.qty, STATUS[e.status], fmtDate(e.onRentDate), fmtDate(m.end), m.eacDays,
       money(m.monthlyCost), money(m.itdCost), money(m.eacCost), money(m.itdProfit)];
   });
   doc.autoTable({
     ...tableStyle, startY: startY + 6,
-    head: [['Equip #', 'Description', 'Vendor', 'PO #', 'Qty', 'Status', 'On rent', 'Off rent', 'Days', 'Monthly (30d)', 'Cost ITD', 'Cost EAC', 'Profit ITD']],
+    head: [['Equip #', 'Description', 'PO #', 'Cost code', 'Vendor', 'Qty', 'Status', 'On rent', 'Off rent', 'Days', 'Monthly (30d)', 'Cost ITD', 'Cost EAC', 'Profit ITD']],
     body,
-    foot: [['Total', '', '', '', t.qty, '', '', '', '', money(t.mo), money(t.itd), money(t.eac), money(t.p)]],
-    columnStyles: { 1: { cellWidth: 130 }, 4: { halign: 'right' }, 8: { halign: 'right' }, 9: { halign: 'right' }, 10: { halign: 'right' }, 11: { halign: 'right' }, 12: { halign: 'right' } },
-    didParseCell: d => { if (d.section === 'foot' && d.column.index >= 4) d.cell.styles.halign = 'right'; },
+    foot: [['Total', '', '', '', '', t.qty, '', '', '', '', money(t.mo), money(t.itd), money(t.eac), money(t.p)]],
+    columnStyles: { 1: { cellWidth: 118 }, 5: { halign: 'right' }, 9: { halign: 'right' }, 10: { halign: 'right' }, 11: { halign: 'right' }, 12: { halign: 'right' }, 13: { halign: 'right' } },
+    didParseCell: d => { if (d.section === 'foot' && d.column.index >= 5) d.cell.styles.halign = 'right'; },
     didDrawPage: () => pdfHeader(doc, doc.__title, doc.__subtitle),
   });
   return doc.lastAutoTable.finalY + 24;
