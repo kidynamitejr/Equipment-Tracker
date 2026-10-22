@@ -2,7 +2,7 @@
 
 import * as store from '../store.js';
 import { jobMetrics, equipmentMetrics, combinedSchedule, dailySchedule } from '../calc.js';
-import { esc, money, compactMoney, fmtDate, pct, today, addDays, debounce } from '../util.js';
+import { esc, money, compactMoney, fmtDate, fmtShort, pct, today, addDays, debounce } from '../util.js';
 import { icon, canEdit, statusPill, openModal, help } from '../ui.js';
 import { openJobForm } from './jobForm.js';
 import { openEquipment } from './equipment.js';
@@ -126,8 +126,8 @@ const COLUMNS = [
   ['end', 'Off rent', (e, m) => m.end],
   ['days', 'Days', (e, m) => m.eacDays, 'num'],
   ['monthly', 'Monthly cost', (e, m) => m.monthlyCost, 'num'],
-  ['itd', 'Rental cost ITD', (e, m) => m.itdCost, 'num'],
-  ['eac', 'Rental cost EAC', (e, m) => m.eacCost, 'num'],
+  ['itd', 'ITD cost', (e, m) => m.itdCost, 'num'],
+  ['eac', 'EAC cost', (e, m) => m.eacCost, 'num'],
   ['profit', 'Profit to date', (e, m) => m.itdProfit, 'num'],
 ];
 
@@ -179,9 +179,9 @@ function renderEquipmentTable(el, job, list, f, { coe = false, onOpen }) {
         <span class="result-count">${rows.length} of ${list.length} line${list.length === 1 ? '' : 's'}</span>
       </div>
       ${rows.length ? `
-      <div class="table-wrap"><table class="data cards">
+      <div class="table-wrap"><table class="data cards fit">
         <thead><tr>
-          <th class="col-req">Request</th>
+          <th class="col-req"><span class="sr-only">Request</span></th>
           ${COLUMNS.map(([k, l, , cls]) => `<th class="sortable ${cls || ''}" data-sort="${k}">${l}<span class="sort">${f.sort === k ? (f.dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('')}
         </tr></thead>
         <tbody>
@@ -189,9 +189,9 @@ function renderEquipmentTable(el, job, list, f, { coe = false, onOpen }) {
     const req = store.openRequestFor(e.id);
     const dueSoon = e.status === 'on' && m.end >= t && m.end <= soon;
     const reqCell = req
-      ? `<span class="tag tag-req" title="${store.REQUEST_LABELS[req.type]} requested">${req.type === 'offrent' ? 'Off rent' : req.type === 'forecast' ? 'Date change' : 'Transfer'} pending</span>`
+      ? `<span class="tag tag-req" title="${store.REQUEST_LABELS[req.type]} requested">${req.type === 'offrent' ? 'Off rent' : req.type === 'forecast' ? 'Date' : 'Transfer'}<br>pending</span>`
       : e.status !== 'off'
-        ? `<button class="btn btn-xs" data-request="${e.id}" title="Request off rent, forecast change, or transfer">${icon('swap', 13)} Request</button>`
+        ? `<button class="btn btn-xs btn-req" data-request="${e.id}" title="Request off rent, forecast change, or transfer">${icon('swap', 13)}<span>Request</span></button>`
         : '<span class="muted">—</span>';
     return `<tr data-eq="${e.id}">
               <td data-label="Request" class="col-req">${reqCell}</td>
@@ -202,19 +202,19 @@ function renderEquipmentTable(el, job, list, f, { coe = false, onOpen }) {
               <td data-label="Vendor">${esc(e.vendor || '—')}</td>
               <td data-label="Qty" class="num">${esc(e.qty)}</td>
               <td data-label="Status">${statusPill(e.status)}</td>
-              <td data-label="On rent">${fmtDate(e.onRentDate)}</td>
-              <td data-label="Off rent"><div class="cell-stack"><span>${fmtDate(m.end)}${dueSoon ? '<span class="tag tag-warn">≤ 7 days</span>' : ''}</span><span class="secondary">${e.status === 'off' ? 'Actual' : e.forecastOffDate ? 'Forecast' : 'No forecast'}</span></div></td>
+              <td data-label="On rent" class="date" title="${fmtDate(e.onRentDate)}">${fmtShort(e.onRentDate)}</td>
+              <td data-label="Off rent" class="date" title="${fmtDate(m.end)}"><div class="cell-stack"><span>${fmtShort(m.end)}</span>${dueSoon ? '<span class="tag tag-warn">≤ 7 days</span>' : `<span class="secondary">${e.status === 'off' ? 'Actual' : e.forecastOffDate ? 'Forecast' : 'No forecast'}</span>`}</div></td>
               <td data-label="Days" class="m-hide num">${m.eacDays}</td>
-              <td data-label="Monthly cost" class="m-hide num">${money(m.monthlyCost)}</td>
-              <td data-label="Rental cost ITD" class="num">${money(m.itdCost)}</td>
-              <td data-label="Rental cost EAC" class="num">${money(m.eacCost)}</td>
-              <td data-label="Profit to date" class="m-hide num profit">${money(m.itdProfit)}</td>
+              <td data-label="Monthly cost" class="m-hide num" title="${money(m.monthlyCost)}">${money(m.monthlyCost, true)}</td>
+              <td data-label="Rental cost ITD" class="num" title="${money(m.itdCost)}">${money(m.itdCost, true)}</td>
+              <td data-label="Rental cost EAC" class="num" title="${money(m.eacCost)}">${money(m.eacCost, true)}</td>
+              <td data-label="Profit to date" class="m-hide num profit" title="${money(m.itdProfit)}">${money(m.itdProfit, true)}</td>
             </tr>`;
   }).join('')}
         </tbody>
         <tfoot><tr class="m-total">
-          <td class="col-req">Total${filtered ? ' (filtered)' : ''}</td><td class="col-eqno"></td><td colspan="4"></td><td class="num">${tot.qty}</td><td colspan="4"></td>
-          <td class="num">${money(tot.mo)}</td><td class="num">${money(tot.itd)}</td><td class="num">${money(tot.eac)}</td><td class="num profit">${money(tot.p)}</td>
+          <td class="col-req"></td><td class="col-eqno">Total${filtered ? '<br><span class="secondary">filtered</span>' : ''}</td><td colspan="4"></td><td class="num">${tot.qty}</td><td colspan="4"></td>
+          <td class="num">${money(tot.mo, true)}</td><td class="num">${money(tot.itd, true)}</td><td class="num">${money(tot.eac, true)}</td><td class="num profit">${money(tot.p, true)}</td>
         </tr></tfoot>
       </table></div>` : `
       <div class="empty">${icon(coe ? 'building' : 'truck', 36)}

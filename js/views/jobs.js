@@ -123,7 +123,7 @@ export function renderJobs(app) {
           <span class="result-count">${rows.length} of ${all.length} jobs</span>
         </div>
         ${rows.length ? `
-        <div class="table-wrap"><table class="data cards">
+        <div class="table-wrap"><table class="data cards fit">
           <thead><tr>
             ${th('number', 'Job')}${th('client', 'Client')}${th('pm', 'Project manager')}
             ${th('on', 'On rent', 'num')}${th('mo', 'Monthly cost', 'num')}${th('itd', 'ITD cost', 'num')}${th('eac', 'EAC cost', 'num')}${th('reqs', 'Requests', 'num')}
@@ -135,9 +135,9 @@ export function renderJobs(app) {
                 <td data-label="Client"><div class="cell-stack"><span>${esc(r.job.clientName || '—')}</span><span class="secondary">${esc(r.job.contractType || '')}</span></div></td>
                 <td data-label="Project manager">${esc(r.job.pm || '—')}</td>
                 <td data-label="On rent" class="num"><span>${r.m.onRent}${r.m.offSoon ? `<span class="tag tag-warn">${r.m.offSoon} soon</span>` : ''}</span></td>
-                <td data-label="Monthly cost" class="num">${money(r.m.monthlyCost)}</td>
-                <td data-label="ITD cost" class="num"><div class="cell-stack"><span>${money(r.m.itdCost)}</span><span class="secondary profit">${money(r.m.itdProfit)} profit</span></div></td>
-                <td data-label="EAC cost" class="num"><div class="cell-stack"><span>${money(r.m.eacCost)}</span><span class="secondary profit">${money(r.m.eacProfit)} profit</span></div></td>
+                <td data-label="Monthly cost" class="num">${money(r.m.monthlyCost, true)}</td>
+                <td data-label="ITD cost" class="num"><div class="cell-stack"><span>${money(r.m.itdCost, true)}</span><span class="secondary profit">${money(r.m.itdProfit, true)} profit</span></div></td>
+                <td data-label="EAC cost" class="num"><div class="cell-stack"><span>${money(r.m.eacCost, true)}</span><span class="secondary profit">${money(r.m.eacProfit, true)} profit</span></div></td>
                 <td data-label="Requests" class="num">${r.openReqs ? `<span class="badge badge-alert">${r.openReqs}</span>` : '<span class="muted">—</span>'}</td>
               </tr>`).join('')}
           </tbody>

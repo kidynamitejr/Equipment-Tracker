@@ -400,7 +400,7 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
 @media (max-width: 1560px) {
   .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   .shell { flex-direction: column; }
   .sidebar { position: sticky; top: 0; z-index: 30; height: auto; width: 100%; flex-direction: row; align-items: center; border-right: 0; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
   .brand { padding: 12px 0; }
@@ -458,7 +458,7 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
 @media (max-width: 1100px) {
   .guide-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   .sidebar { flex-wrap: wrap; }
   .sidenav { display: contents; }
   .sidenav .nav-item:first-child { margin-left: auto; }
@@ -580,4 +580,46 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
   .job-head h1 { font-size: 22px; }
   .job-head-desc { font-size: 15px; }
   .job-tabs-id { display: none; }
+}
+
+/* Dense equipment tables: every column fits on screen without sideways scrolling. Headers and long
+   text wrap, dates are short, money is whole dollars (hover a cell for the exact value). */
+@media (min-width: 641px) {
+  table.data.fit { font-size: 12.5px; }
+  table.data.fit th { white-space: normal; line-height: 1.25; padding: 10px 6px; vertical-align: bottom; }
+  table.data.fit td { padding: 9px 6px; }
+  table.data.fit td:first-child, table.data.fit th:first-child { padding-left: 12px; }
+  table.data.fit td:last-child, table.data.fit th:last-child { padding-right: 14px; }
+  table.data.fit .mono { font-size: 12px; }
+  table.data.fit .desc { white-space: normal; min-width: 110px; max-width: none; line-height: 1.3;
+    display: table-cell; }
+  table.data.fit td[data-label="Job"], table.data.fit td[data-label="Client"] { white-space: normal; min-width: 150px; }
+  table.data.fit td[data-label="Vendor"] { white-space: normal; min-width: 72px; line-height: 1.3; }
+  table.data.fit .date { font-variant-numeric: tabular-nums; }
+  table.data.fit .date .tag { margin: 2px 0 0; align-self: flex-start; font-size: 10.5px; padding: 1px 5px; }
+  table.data.fit .pill { padding: 1px 7px 1px 6px; font-size: 11.5px; gap: 5px; }
+  table.data.fit .col-req { width: 62px; min-width: 62px; }
+  table.data.fit .col-eqno { left: 62px; }
+  table.data.fit .btn-req { width: 30px; padding: 0; justify-content: center; }
+  table.data.fit .btn-req span { display: none; }
+  table.data.fit .tag-req { font-size: 10px; line-height: 1.2; padding: 3px 4px; text-align: center; }
+  table.data.fit .col-req .tag-req { white-space: nowrap; }
+}
+@media (min-width: 641px) and (max-width: 1440px) {
+  .page-job { padding-left: 24px; padding-right: 24px; }
+}
+@media (min-width: 1181px) and (max-width: 1366px) {
+  :root { --sidebar-w: 212px; }
+  .page-job { padding-left: 16px; padding-right: 16px; }
+}
+@media (min-width: 641px) and (max-width: 1300px) {
+  table.data.fit { font-size: 12px; }
+  table.data.fit th, table.data.fit td { padding-left: 4px; padding-right: 4px; }
+  table.data.fit td:first-child, table.data.fit th:first-child { padding-left: 8px; }
+  table.data.fit td:last-child, table.data.fit th:last-child { padding-right: 10px; }
+  table.data.fit .mono { font-size: 11.5px; letter-spacing: -0.02em; }
+  table.data.fit .pill { padding: 0; border: 0; background: none; font-size: 12px; white-space: normal; line-height: 1.2; }
+  table.data.fit .pill i { flex: none; }
+  table.data.fit td[data-label="Vendor"] { min-width: 60px; }
+  table.data.fit .desc { min-width: 100px; }
 }

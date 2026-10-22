@@ -42,6 +42,12 @@ export function fmtDate(iso) {
   return iso ? dateFmt.format(parseDate(iso)) : '—';
 }
 
+// Compact date for dense tables, e.g. 11/01/26.
+const shortFmt = new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit', timeZone: 'UTC' });
+export function fmtShort(iso) {
+  return iso ? shortFmt.format(parseDate(iso)) : '—';
+}
+
 const moneyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const moneyFmt0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 export function money(n, whole = false) {
