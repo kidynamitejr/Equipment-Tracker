@@ -4,6 +4,9 @@
 import { uid, today, addDays } from './util.js';
 
 const KEY = 'equipment-tracker.v1';
+// Bump when the sample data changes. Browsers still holding an untouched older sample set get the new one.
+const DEMO_VERSION = 2;
+const OLD_DEMO_JOBS = ['24-1187', '25-0214'];
 const listeners = new Set();
 let db = load();
 
@@ -12,11 +15,18 @@ function blank() {
 }
 
 function load() {
+  let data = null;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...blank(), ...JSON.parse(raw) };
+    if (raw) data = { ...blank(), ...JSON.parse(raw) };
   } catch (e) { /* storage unavailable */ }
-  return seed();
+  const untouchedOldDemo = data && !data.demoVersion && !data.activity.length && data.jobs.length
+    && data.jobs.every(j => OLD_DEMO_JOBS.includes(j.number));
+  if (!data || untouchedOldDemo || (data.demoVersion && data.demoVersion < DEMO_VERSION && !data.activity.length)) {
+    data = seed();
+    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
+  }
+  return data;
 }
 
 function persist() {
@@ -175,7 +185,7 @@ export function resetDemo() {
 }
 
 export function clearAll() {
-  db = blank();
+  db = { ...blank(), demoVersion: DEMO_VERSION };
   persist();
 }
 
@@ -292,5 +302,5 @@ function seed() {
     { id: uid('req'), jobId: j4.id, equipmentId: find('EX-0305').id, type: 'offrent', requestedBy: 'Ray Delgado', requestedDate: d(-15), reason: 'Excavation for the rack foundations is done.', status: 'completed', completedBy: 'Jane Buyer', completedAt: ago(24 * 15), effectiveDate: d(-15), createdAt: ago(24 * 17) },
     { id: uid('req'), jobId: j6.id, equipmentId: find('LT-0810').id, type: 'offrent', requestedBy: 'Curtis Boone', requestedDate: d(5), reason: 'Night shift ends Friday.', status: 'pending', createdAt: ago(20) },
   );
-  return { jobs: [j1, j2, j3, j4, j5, j6], equipment, requests, activity: [] };
+  return { jobs: [j1, j2, j3, j4, j5, j6], equipment, requests, activity: [], demoVersion: DEMO_VERSION };
 }
