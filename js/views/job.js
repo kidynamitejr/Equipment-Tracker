@@ -40,6 +40,10 @@ export function renderJob(app, jobId, tab) {
     <div class="page page-job">
       <div class="crumbs"><a href="#/jobs">All jobs</a>${icon('chevR', 12)}<span>${esc(job.number)}</span></div>
       <header class="job-head">
+        <div class="job-banner" role="img" aria-label="Crane lifting materials on a construction site">
+          <a class="hero-credit" href="https://unsplash.com/photos/construction-workers-observe-a-crane-lifting-materials-iwx30aGxO8E" target="_blank" rel="noopener">Photo: John Kakuk / Unsplash</a>
+        </div>
+        <div class="job-head-body">
         <div class="job-head-id">
           <span class="job-head-label">Job</span>
           <span class="job-head-no">${esc(job.number)}</span>
@@ -67,6 +71,7 @@ export function renderJob(app, jobId, tab) {
             <div><dt>JDE ID</dt><dd class="mono">${esc(job.jdeId || '—')}</dd></div>
             <div class="m-hide"><dt>Address</dt><dd>${esc(job.address || '—')}</dd></div>
           </dl>
+        </div>
         </div>
       </header>
 

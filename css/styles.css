@@ -527,8 +527,17 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
 .page-job { --job-band: #0b1220; }
 .page-job .crumbs { margin-bottom: 14px; }
 .job-head {
-  display: flex; margin-bottom: 24px; background: var(--surface); border: 1px solid var(--border);
+  margin-bottom: 24px; background: var(--surface); border: 1px solid var(--border);
   border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 10px 28px -14px rgba(16, 24, 40, .22);
+}
+.job-head-body { display: flex; }
+/* Job pages use their own photo, distinct from the All jobs banner. */
+.job-banner {
+  position: relative; height: 150px;
+  background:
+    linear-gradient(180deg, rgba(8, 13, 24, .05) 40%, rgba(8, 13, 24, .55) 100%),
+    url("https://images.unsplash.com/photo-1751054720514-067105f538d4?auto=format&fit=crop&crop=entropy&w=2400&h=500&q=75") center 45% / cover no-repeat,
+    linear-gradient(135deg, #2a3a55, #0b1220);
 }
 .job-head-id {
   flex: none; width: 210px; padding: 26px 24px; display: flex; flex-direction: column; justify-content: center; gap: 6px;
@@ -552,8 +561,18 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
 .job-tabs-id b { font-family: var(--mono); font-weight: 600; color: #fff; background: var(--job-band); padding: 3px 8px; border-radius: 6px; flex: none; }
 
 @media (max-width: 900px) {
-  .job-head { flex-direction: column; }
-  .job-head-id { width: auto; flex-direction: row; align-items: baseline; gap: 12px; padding: 16px 20px; border-right: 0; border-bottom: 4px solid var(--brand); }
+  .job-head-body { flex-direction: column; }
+  .job-banner { height: 110px; }
+  .job-head-body { display: flex; }
+/* Job pages use their own photo, distinct from the All jobs banner. */
+.job-banner {
+  position: relative; height: 150px;
+  background:
+    linear-gradient(180deg, rgba(8, 13, 24, .05) 40%, rgba(8, 13, 24, .55) 100%),
+    url("https://images.unsplash.com/photo-1751054720514-067105f538d4?auto=format&fit=crop&crop=entropy&w=2400&h=500&q=75") center 45% / cover no-repeat,
+    linear-gradient(135deg, #2a3a55, #0b1220);
+}
+.job-head-id { width: auto; flex-direction: row; align-items: baseline; gap: 12px; padding: 16px 20px; border-right: 0; border-bottom: 4px solid var(--brand); }
   .job-head-no { font-size: 30px; }
   .job-head-main { padding: 18px 20px; }
   .job-tabs-id span, .job-tabs-id { max-width: 140px; }
