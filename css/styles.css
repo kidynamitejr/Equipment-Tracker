@@ -531,21 +531,29 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
   border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 10px 28px -14px rgba(16, 24, 40, .22);
 }
 .job-head-body { display: flex; }
-/* Job pages use their own photo, distinct from the All jobs banner. */
-.job-banner {
-  position: relative; height: 150px;
-  background:
-    linear-gradient(180deg, rgba(8, 13, 24, .05) 40%, rgba(8, 13, 24, .55) 100%),
-    url("https://images.unsplash.com/photo-1751054720514-067105f538d4?auto=format&fit=crop&crop=entropy&w=2400&h=500&q=75") center 45% / cover no-repeat,
-    linear-gradient(135deg, #2a3a55, #0b1220);
-}
 .job-head-id {
   flex: none; width: 210px; padding: 26px 24px; display: flex; flex-direction: column; justify-content: center; gap: 6px;
   background: var(--job-band); color: #fff; border-right: 4px solid var(--brand);
 }
 .job-head-label { font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #f7a26b; }
 .job-head-no { font-family: var(--mono); font-size: 38px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
-.job-head-main { flex: 1; min-width: 0; padding: 24px 28px; }
+/* The job info panel sits on its own photo (a refinery at night), different from the All jobs banner. */
+.job-head-main {
+  position: relative; flex: 1; min-width: 0; padding: 26px 30px 30px; color: #fff;
+  background:
+    linear-gradient(100deg, rgba(8, 13, 24, .93) 0%, rgba(8, 13, 24, .8) 50%, rgba(8, 13, 24, .45) 100%),
+    url("https://images.unsplash.com/photo-1726111262949-e22631a8c376?auto=format&fit=crop&crop=entropy&w=2400&h=700&q=75") center / cover no-repeat,
+    linear-gradient(135deg, #1b2a44, #0b1220);
+}
+.job-head-main h1 { color: #fff; }
+.job-head-main .job-head-desc { color: #e8ecf3; }
+.job-head-main .job-head-desc .muted { color: #aab4c5; }
+.job-head-main .job-head-desc a { color: #f7a26b; }
+.job-head-main .job-head-meta { border-top-color: rgba(255, 255, 255, .16); }
+.job-head-main .job-head-meta dt { color: #9aa6bb; }
+.job-head-main .btn:not(.btn-primary) { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .22); color: #fff; backdrop-filter: blur(8px); box-shadow: none; }
+.job-head-main .btn:not(.btn-primary):hover { background: rgba(255, 255, 255, .2); }
+.job-head-main .menu { color: var(--text); }
 .job-head-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .job-head h1 { flex: 1 1 280px; font-size: 28px; line-height: 1.2; letter-spacing: -0.025em; font-weight: 600; }
 .job-head-desc { margin-top: 10px; font-size: 16px; line-height: 1.55; color: var(--text); max-width: 900px; white-space: pre-line; }
@@ -562,19 +570,9 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
 
 @media (max-width: 900px) {
   .job-head-body { flex-direction: column; }
-  .job-banner { height: 110px; }
-  .job-head-body { display: flex; }
-/* Job pages use their own photo, distinct from the All jobs banner. */
-.job-banner {
-  position: relative; height: 150px;
-  background:
-    linear-gradient(180deg, rgba(8, 13, 24, .05) 40%, rgba(8, 13, 24, .55) 100%),
-    url("https://images.unsplash.com/photo-1751054720514-067105f538d4?auto=format&fit=crop&crop=entropy&w=2400&h=500&q=75") center 45% / cover no-repeat,
-    linear-gradient(135deg, #2a3a55, #0b1220);
-}
-.job-head-id { width: auto; flex-direction: row; align-items: baseline; gap: 12px; padding: 16px 20px; border-right: 0; border-bottom: 4px solid var(--brand); }
+  .job-head-id { width: auto; flex-direction: row; align-items: baseline; gap: 12px; padding: 16px 20px; border-right: 0; border-bottom: 4px solid var(--brand); }
   .job-head-no { font-size: 30px; }
-  .job-head-main { padding: 18px 20px; }
+  .job-head-main { padding: 18px 20px 32px; }
   .job-tabs-id span, .job-tabs-id { max-width: 140px; }
 }
 @media (max-width: 640px) {

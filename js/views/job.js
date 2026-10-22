@@ -40,15 +40,13 @@ export function renderJob(app, jobId, tab) {
     <div class="page page-job">
       <div class="crumbs"><a href="#/jobs">All jobs</a>${icon('chevR', 12)}<span>${esc(job.number)}</span></div>
       <header class="job-head">
-        <div class="job-banner" role="img" aria-label="Crane lifting materials on a construction site">
-          <a class="hero-credit" href="https://unsplash.com/photos/construction-workers-observe-a-crane-lifting-materials-iwx30aGxO8E" target="_blank" rel="noopener">Photo: John Kakuk / Unsplash</a>
-        </div>
         <div class="job-head-body">
         <div class="job-head-id">
           <span class="job-head-label">Job</span>
           <span class="job-head-no">${esc(job.number)}</span>
         </div>
         <div class="job-head-main">
+          <a class="hero-credit" href="https://unsplash.com/photos/a-large-oil-refinery-lit-up-at-night-L-RSVfhluGw" target="_blank" rel="noopener">Photo: Kamekichi Photos / Unsplash</a>
           <div class="job-head-top">
             <h1>${esc(job.name)}</h1>
             <div class="actions">
