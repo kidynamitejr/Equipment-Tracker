@@ -93,7 +93,8 @@ export function requestCard(r, { compact = false, showJob = false } = {}) {
       ${eq && !compact ? `<dl class="req-grid">
         <div><dt>Vendor</dt><dd>${esc(eq.vendor || '—')}</dd></div>
         <div><dt>PO #</dt><dd>${esc(eq.po || '—')}${eq.poAmount ? ` · ${money(eq.poAmount)}` : ''}</dd></div>
-        <div><dt>Qty / cost code</dt><dd>${esc(eq.qty)} · ${esc(eq.costCode || '—')}</dd></div>
+        <div><dt>Quantity</dt><dd>${esc(eq.qty)}</dd></div>
+        <div><dt>Cost code</dt><dd>${esc(eq.costCode || '—')}</dd></div>
         <div><dt>Status</dt><dd>${statusPill(eq.status)}</dd></div>
         <div><dt>Make / model</dt><dd>${esc([eq.manufacturer, eq.model].filter(Boolean).join(' ') || '—')}</dd></div>
         <div><dt>Serial #</dt><dd>${esc(eq.serial || '—')}</dd></div>

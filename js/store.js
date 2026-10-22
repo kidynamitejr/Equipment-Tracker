@@ -225,5 +225,72 @@ function seed() {
     { id: uid('req'), jobId: j1.id, equipmentId: equipment[1].id, type: 'offrent', requestedBy: 'Marcus Hale', requestedDate: d(2), reason: 'Steel erection at the quench tower is complete.', status: 'pending', createdAt: new Date(Date.now() - 3600e3 * 5).toISOString() },
     { id: uid('req'), jobId: j1.id, equipmentId: equipment[0].id, type: 'forecast', requestedBy: 'Marcus Hale', requestedDate: d(55), reason: 'Furnace module set delayed by two weeks.', status: 'pending', createdAt: new Date(Date.now() - 3600e3 * 26).toISOString() },
   ];
-  return { jobs: [j1, j2], equipment, requests, activity: [] };
+  const j3 = {
+    id: uid('job'), number: '25-0388', name: 'Port Arthur Hydrocracker Revamp', jdeId: 'JDE-41966', companyId: '100',
+    clientId: 'C-3307', clientName: 'Sabine Gulf Refining', contractType: 'Lump Sum', pm: 'Kevin Marsh',
+    pa: 'Alicia Gómez', equipContact: 'Darnell Price (409) 555-0119', address: '1801 Savannah Ave, Port Arthur, TX 77640',
+    markupEquipment: 15, markupNoFuel: 0, markupStdFuel: 5, markupHighFuel: 9, salesTax: 8.25,
+    procurementEmail: 'procurement@example.com', projectEmail: 'pa-hydrocracker@example.com',
+    description: 'Reactor internals replacement, new charge heater, and piping modifications during a 45-day outage.',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  const j4 = {
+    id: uid('job'), number: '25-0412', name: 'Corpus Christi Polyethylene Tie-ins', jdeId: 'JDE-42013', companyId: '110',
+    clientId: 'C-2875', clientName: 'Nueces Polymers LLC', contractType: 'Cost Plus', pm: 'Samantha Lee',
+    pa: 'Jordan Whitfield', equipContact: 'Ray Delgado (361) 555-0164', address: '7200 Up River Rd, Corpus Christi, TX 78409',
+    markupEquipment: 12, markupNoFuel: 0, markupStdFuel: 4, markupHighFuel: 6, salesTax: 8.25,
+    procurementEmail: 'procurement@example.com', projectEmail: 'cc-pe@example.com',
+    description: 'Hot tap and tie-in work for the new PE line, including pipe rack extension and electrical.',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  const j5 = {
+    id: uid('job'), number: '26-0031', name: 'Freeport Chlor-Alkali Unit Expansion', jdeId: 'JDE-42780', companyId: '100',
+    clientId: 'C-1952', clientName: 'Brazosport Chemical Co.', contractType: 'T&M', pm: 'Daniel Reyes',
+    pa: 'Priya Natarajan', equipContact: 'Hector Vela (979) 555-0108', address: '2301 N Brazosport Blvd, Freeport, TX 77541',
+    markupEquipment: 10, markupNoFuel: 0, markupStdFuel: 3, markupHighFuel: 6, salesTax: 8.25,
+    procurementEmail: 'procurement@example.com', projectEmail: 'fp-chloralkali@example.com',
+    description: 'Civil, foundations, and structural steel for the new cell room; mobilizing ahead of mechanical.',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  const j6 = {
+    id: uid('job'), number: '24-1302', name: 'Beaumont Tank Farm Expansion', jdeId: 'JDE-40995', companyId: '110',
+    clientId: 'C-2291', clientName: 'Meridian Petrochemical', contractType: 'Unit Price', pm: 'Rachel Okafor',
+    pa: 'Tom Brennan', equipContact: 'Curtis Boone (409) 555-0177', address: '3300 Gulf St, Beaumont, TX 77701',
+    markupEquipment: 11, markupNoFuel: 0, markupStdFuel: 4, markupHighFuel: 7, salesTax: 8.25,
+    procurementEmail: 'procurement@example.com', projectEmail: 'bmt-tankfarm@example.com',
+    description: 'Four new 150,000 bbl floating-roof tanks with containment and transfer piping. Wrapping up punch list.',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  equipment.push(
+    base(j3, { po: 'PO-121104', description: '250T Crawler Crane', equipNo: 'CC-2501', vendor: 'Maxim Crane Works', rateDaily: 5800, rateWeekly: 17400, rateMonthly: 48500, onRentDate: d(-25), forecastOffDate: d(20), mobCost: 28000, demobCost: 24000, costCode: '03-510-200', fuelType: 'high', fuelMarkup: 9, manufacturer: 'Manitowoc', model: 'MLC300', serial: 'MLC300-1187', poAmount: 160000 }),
+    base(j3, { po: 'PO-121110', description: 'Hydraulic Torque Wrench Kit', equipNo: 'TW-0412', vendor: 'Hydratight', qty: 3, rateDaily: 210, rateWeekly: 620, rateMonthly: 1650, onRentDate: d(-22), forecastOffDate: d(18), costCode: '03-520-310', fuelType: 'none', fuelMarkup: 0, poAmount: 9000 }),
+    base(j3, { po: 'PO-121118', description: '1600 CFM Air Compressor', equipNo: 'AC-1601', vendor: 'Atlas Copco Rental', rateDaily: 950, rateWeekly: 2800, rateMonthly: 7400, onRentDate: d(-21), forecastOffDate: d(4), mobCost: 1200, demobCost: 1200, costCode: '03-520-140', fuelType: 'high', fuelMarkup: 9, dieselTax: 0.5, manufacturer: 'Atlas Copco', model: 'XRVS 1600', poAmount: 14000 }),
+    base(j3, { po: 'PO-121125', description: 'Scaffold Package (Tower)', equipNo: 'SC-0900', vendor: 'BrandSafway', qty: 2, rateDaily: 400, rateWeekly: 1150, rateMonthly: 3000, onRentDate: d(-30), forecastOffDate: d(16), mobCost: 6500, demobCost: 4500, costCode: '03-540-100', fuelType: 'none', fuelMarkup: 0, poAmount: 24000 }),
+    base(j3, { po: 'PO-121131', description: '60 ft Telescopic Boom Lift', equipNo: 'BL-6004', vendor: 'Sunbelt Rentals', qty: 3, rateDaily: 520, rateWeekly: 1350, rateMonthly: 3300, onRentDate: d(-18), forecastOffDate: d(2), mobCost: 450, demobCost: 450, costCode: '03-510-210', manufacturer: 'JLG', model: '600S', poAmount: 15000 }),
+    base(j3, { po: 'COE-0057', description: 'Company Welding Rig Truck', equipNo: 'CO-WR11', vendor: 'Company Fleet', rateDaily: 150, rateWeekly: 600, rateMonthly: 1900, onRentDate: d(-25), forecastOffDate: d(20), costCode: '03-530-100', coe: true, fuelType: 'high', fuelMarkup: 9, manufacturer: 'Ford', model: 'F-550' }),
+    base(j4, { po: 'PO-121402', description: 'Hot Tap Machine', equipNo: 'HT-1203', vendor: 'TDW Services', rateDaily: 1200, rateWeekly: 3600, rateMonthly: 9500, onRentDate: d(-8), forecastOffDate: d(10), mobCost: 800, demobCost: 800, costCode: '04-520-330', fuelType: 'none', fuelMarkup: 0, manufacturer: 'T.D. Williamson', model: 'T-760', poAmount: 18000 }),
+    base(j4, { po: 'PO-121409', description: '30T Rough Terrain Crane', equipNo: 'RT-3008', vendor: 'United Rentals', rateDaily: 1400, rateWeekly: 4200, rateMonthly: 11500, onRentDate: d(-40), forecastOffDate: d(25), mobCost: 2500, demobCost: 2500, costCode: '04-510-200', fuelType: 'high', fuelMarkup: 6, manufacturer: 'Terex', model: 'RT 230', poAmount: 38000 }),
+    base(j4, { po: 'PO-121415', description: '45 ft Articulating Boom Lift', equipNo: 'BL-4502', vendor: 'Herc Rentals', qty: 2, rateDaily: 380, rateWeekly: 950, rateMonthly: 2350, onRentDate: d(-35), forecastOffDate: d(30), mobCost: 350, demobCost: 350, costCode: '04-510-210', manufacturer: 'Genie', model: 'Z-45 XC', poAmount: 12000 }),
+    base(j4, { po: 'PO-121420', description: 'Portable Generator 125 kVA', equipNo: 'GN-1250', vendor: 'Aggreko', rateDaily: 330, rateWeekly: 900, rateMonthly: 2300, onRentDate: d(-35), forecastOffDate: d(30), costCode: '04-520-150', fuelType: 'high', fuelMarkup: 6, dieselTax: 0.5, envTax: 1, manufacturer: 'Caterpillar', model: 'XQ125', poAmount: 6500 }),
+    base(j4, { po: 'PO-121388', description: 'Mini Excavator', equipNo: 'EX-0305', vendor: 'Sunbelt Rentals', rateDaily: 340, rateWeekly: 950, rateMonthly: 2400, onRentDate: d(-60), forecastOffDate: d(-15), offRentDate: d(-15), status: 'off', mobCost: 300, demobCost: 300, costCode: '04-500-110', manufacturer: 'Kubota', model: 'KX057-5', poAmount: 4500 }),
+    base(j5, { po: 'PO-122015', description: '330 Hydraulic Excavator', equipNo: 'EX-3302', vendor: 'Holt CAT', rateDaily: 1650, rateWeekly: 4950, rateMonthly: 13200, onRentDate: d(-12), forecastOffDate: d(75), mobCost: 2200, demobCost: 2200, costCode: '05-500-120', fuelType: 'high', fuelMarkup: 6, propertyTax: 0.75, manufacturer: 'Caterpillar', model: '330', serial: 'CAT0330GXYZ0042', poAmount: 62000 }),
+    base(j5, { po: 'PO-122021', description: 'Pile Driving Rig', equipNo: 'PD-0701', vendor: 'Pileco', rateDaily: 3900, rateWeekly: 11700, rateMonthly: 31000, onRentDate: d(-5), forecastOffDate: d(50), mobCost: 15000, demobCost: 12000, costCode: '05-500-200', fuelType: 'high', fuelMarkup: 6, manufacturer: 'Liebherr', model: 'LRH 100', poAmount: 95000 }),
+    base(j5, { po: 'PO-122030', description: '12 yd Concrete Pump Truck', equipNo: 'CP-3807', vendor: 'Brundage-Bone', rateDaily: 1100, rateWeekly: 3300, rateMonthly: 8800, onRentDate: d(14), forecastOffDate: d(45), status: 'forecast', mobCost: 900, costCode: '05-510-300', fuelType: 'high', fuelMarkup: 6, poAmount: 15000 }),
+    base(j5, { po: 'PO-122034', description: 'Site Office Trailer 12x60', equipNo: 'OF-1260', vendor: 'WillScot', rateDaily: 45, rateWeekly: 150, rateMonthly: 480, onRentDate: d(-20), forecastOffDate: d(180), mobCost: 1800, demobCost: 1500, costCode: '05-900-100', fuelType: 'none', fuelMarkup: 0, poAmount: 6000 }),
+    base(j5, { po: 'COE-0063', description: 'Company Skid Steer', equipNo: 'CO-SS22', vendor: 'Company Fleet', rateDaily: 180, rateWeekly: 540, rateMonthly: 1500, onRentDate: d(-12), forecastOffDate: d(75), costCode: '05-530-110', coe: true, fuelType: 'standard', fuelMarkup: 3, manufacturer: 'Bobcat', model: 'S650' }),
+    base(j6, { po: 'PO-119740', description: '100T Crawler Crane', equipNo: 'CC-1003', vendor: 'ALL Erection & Crane', rateDaily: 3100, rateWeekly: 9300, rateMonthly: 25500, onRentDate: d(-150), forecastOffDate: d(-30), offRentDate: d(-30), status: 'off', mobCost: 14000, demobCost: 12000, costCode: '06-510-200', fuelType: 'high', fuelMarkup: 7, manufacturer: 'Link-Belt', model: '218 HSL', poAmount: 140000 }),
+    base(j6, { po: 'PO-119755', description: 'Welding Machine (Engine Drive)', equipNo: 'WM-3001', vendor: 'Airgas', qty: 6, rateDaily: 95, rateWeekly: 260, rateMonthly: 690, onRentDate: d(-140), forecastOffDate: d(9), costCode: '06-520-110', fuelType: 'high', fuelMarkup: 7, poAmount: 22000 }),
+    base(j6, { po: 'PO-119790', description: 'Light Tower (Diesel)', equipNo: 'LT-0810', vendor: 'United Rentals', qty: 4, rateDaily: 75, rateWeekly: 210, rateMonthly: 520, onRentDate: d(-120), forecastOffDate: d(5), costCode: '06-520-160', fuelType: 'standard', fuelMarkup: 4, poAmount: 9500 }),
+    base(j6, { po: 'PO-119802', description: 'Vacuum Truck', equipNo: 'VT-2205', vendor: 'Clean Harbors', rateDaily: 1050, rateWeekly: 3150, rateMonthly: 8400, onRentDate: d(-9), forecastOffDate: d(12), mobCost: 600, demobCost: 600, costCode: '06-560-100', fuelType: 'high', fuelMarkup: 7, envTax: 2, poAmount: 9000 }),
+  );
+  const find = no => equipment.find(e => e.equipNo === no);
+  const ago = h => new Date(Date.now() - 3600e3 * h).toISOString();
+  requests.push(
+    { id: uid('req'), jobId: j3.id, equipmentId: find('AC-1601').id, type: 'offrent', requestedBy: 'Darnell Price', requestedDate: d(1), reason: 'Air tool work in the reactor is complete. Unit is at the north gate.', status: 'pending', createdAt: ago(3) },
+    { id: uid('req'), jobId: j3.id, equipmentId: find('BL-6004').id, type: 'transfer', targetJobId: j4.id, targetForecastDate: d(30), requestedBy: 'Darnell Price', requestedDate: d(3), reason: 'Corpus Christi needs two more lifts for the pipe rack.', status: 'pending', createdAt: ago(8) },
+    { id: uid('req'), jobId: j4.id, equipmentId: find('RT-3008').id, type: 'forecast', requestedBy: 'Ray Delgado', requestedDate: d(40), reason: 'Rack steel delivery slipped two weeks.', status: 'pending', createdAt: ago(30) },
+    { id: uid('req'), jobId: j4.id, equipmentId: find('EX-0305').id, type: 'offrent', requestedBy: 'Ray Delgado', requestedDate: d(-15), reason: 'Excavation for the rack foundations is done.', status: 'completed', completedBy: 'Jane Buyer', completedAt: ago(24 * 15), effectiveDate: d(-15), createdAt: ago(24 * 17) },
+    { id: uid('req'), jobId: j6.id, equipmentId: find('LT-0810').id, type: 'offrent', requestedBy: 'Curtis Boone', requestedDate: d(5), reason: 'Night shift ends Friday.', status: 'pending', createdAt: ago(20) },
+  );
+  return { jobs: [j1, j2, j3, j4, j5, j6], equipment, requests, activity: [] };
 }
