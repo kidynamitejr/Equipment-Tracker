@@ -37,31 +37,38 @@ export function renderJob(app, jobId, tab) {
   ];
 
   app.innerHTML = `
-    <div class="page">
-      <div class="crumbs"><a href="#/jobs">Jobs</a>${icon('chevR', 12)}<span>${esc(job.number)}</span></div>
-      <div class="page-head hero hero-slim">
-        <div>
-          <h1><span class="job-chip">${esc(job.number)}</span>${esc(job.name)}</h1>
-          <div class="sub">
-            <span>${icon('building', 14)} ${esc(job.clientName || '—')}</span>
-            <span>PM: ${esc(job.pm || '—')}</span>
-            <span>${esc(job.contractType || '')}</span>
-            <span>JDE ID ${esc(job.jdeId || '—')}</span>
-          </div>
+    <div class="page page-job">
+      <div class="crumbs"><a href="#/jobs">All jobs</a>${icon('chevR', 12)}<span>${esc(job.number)}</span></div>
+      <header class="job-head">
+        <div class="job-head-id">
+          <span class="job-head-label">Job</span>
+          <span class="job-head-no">${esc(job.number)}</span>
         </div>
-        <div class="actions">
-          <div class="menu-wrap">
-            <button class="btn" data-menu>${icon('download', 15)} Export ${icon('chevD', 14)}</button>
-            <div class="menu">
-              <button data-export="xlsx">${icon('sheet', 16)}<span>Excel workbook<small>Summary, equipment, COE, daily costs, requests</small></span></button>
-              <button data-export="pdf">${icon('file', 16)}<span>PDF cost report<small>Job summary with equipment and COE</small></span></button>
+        <div class="job-head-main">
+          <div class="job-head-top">
+            <h1>${esc(job.name)}</h1>
+            <div class="actions">
+              <div class="menu-wrap">
+                <button class="btn" data-menu>${icon('download', 15)} Export ${icon('chevD', 14)}</button>
+                <div class="menu">
+                  <button data-export="xlsx">${icon('sheet', 16)}<span>Excel workbook<small>Summary, equipment, COE, daily costs, requests</small></span></button>
+                  <button data-export="pdf">${icon('file', 16)}<span>PDF cost report<small>Job summary with equipment and COE</small></span></button>
+                </div>
+              </div>
+              ${canEdit() ? `<button class="btn" data-edit-job>${icon('edit', 15)} Edit job</button>
+              <button class="btn btn-primary" data-add>${icon('plus', 15)} Add ${tab === 'coe' ? 'COE' : 'equipment'}</button>` : ''}
             </div>
           </div>
-          ${canEdit() ? `<button class="btn" data-edit-job>${icon('edit', 15)} Edit job</button>
-          <button class="btn btn-primary" data-add>${icon('plus', 15)} Add ${tab === 'coe' ? 'COE' : 'equipment'}</button>` : ''}
+          <p class="job-head-desc">${job.description ? esc(job.description) : `<span class="muted">No description yet.${canEdit() ? ' <a href="#" data-edit-desc>Add one</a>' : ''}</span>`}</p>
+          <dl class="job-head-meta">
+            <div><dt>Client</dt><dd>${esc(job.clientName || '—')}</dd></div>
+            <div><dt>Project manager</dt><dd>${esc(job.pm || '—')}</dd></div>
+            <div><dt>Contract</dt><dd>${esc(job.contractType || '—')}</dd></div>
+            <div><dt>JDE ID</dt><dd class="mono">${esc(job.jdeId || '—')}</dd></div>
+            <div class="m-hide"><dt>Address</dt><dd>${esc(job.address || '—')}</dd></div>
+          </dl>
         </div>
-        <a class="hero-credit" href="https://unsplash.com/photos/industrial-refinery-towers-and-crane-eXblvZg_ulc" target="_blank" rel="noopener">Photo: Red Shuheart / Unsplash</a>
-      </div>
+      </header>
 
       <div class="kpis">
         <div class="kpi"><div class="kpi-label">Total EAC days${help('Estimate at completion: days from the first on-rent date to the latest off-rent date (actual or forecast).')}</div><div class="kpi-value">${m.eacDays.toLocaleString()}</div>
@@ -80,7 +87,8 @@ export function renderJob(app, jobId, tab) {
           <div class="kpi-foot">Last 30 days · <span class="pos">${money(m.monthlyProfit, true)}</span> profit</div></div>
       </div>
 
-      <nav class="tabs">
+      <nav class="tabs job-tabs">
+        <span class="job-tabs-id" aria-hidden="true"><b>${esc(job.number)}</b>${esc(job.name)}</span>
         ${tabs.map(([k, l, n, alert]) => `<a href="#/job/${job.id}/${k}" class="${tab === k ? 'active' : ''}">${l}${n !== undefined && (n || !alert) ? ` <span class="badge ${alert && n ? 'badge-alert' : ''}">${n}</span>` : ''}</a>`).join('')}
       </nav>
       <section id="tab-body"></section>
@@ -90,6 +98,7 @@ export function renderJob(app, jobId, tab) {
   app.querySelector('[data-export="xlsx"]').addEventListener('click', () => exportJobExcel(job));
   app.querySelector('[data-export="pdf"]').addEventListener('click', () => exportJobPdf(job));
   app.querySelector('[data-edit-job]')?.addEventListener('click', () => openJobForm(job));
+  app.querySelector('[data-edit-desc]')?.addEventListener('click', e => { e.preventDefault(); openJobForm(job); });
   app.querySelector('[data-add]')?.addEventListener('click', () => openEquipment(job.id, null, { coe: tab === 'coe' }));
 
   const body = app.querySelector('#tab-body');

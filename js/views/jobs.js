@@ -60,12 +60,13 @@ export function renderJobs(app) {
   const th = (k, label, cls = '') => `<th class="sortable ${cls}" data-sort="${k}">${label}<span class="sort">${state.sort === k ? (state.dir > 0 ? '▲' : '▼') : ''}</span></th>`;
 
   app.innerHTML = `
-    <div class="page">
+    <div class="page page-portfolio">
       <div class="page-head hero">
         <div>
-          <div class="hero-eyebrow">Halvorsen Industrial · Equipment Rental Control</div>
-          <h1>Every rental. Every job.<br>One ledger.</h1>
-          <div class="sub"><span>${all.length} active job${all.length === 1 ? '' : 's'}</span><span>As of ${fmtDate(new Date().toISOString().slice(0, 10))}</span></div>
+          <div class="hero-eyebrow">${icon('grid', 14)} Portfolio view · Halvorsen Industrial</div>
+          <h1>All jobs</h1>
+          <p class="hero-tag">Every rental across every job, in one ledger.</p>
+          <div class="sub"><span>${all.length} job${all.length === 1 ? '' : 's'}</span><span>As of ${fmtDate(new Date().toISOString().slice(0, 10))}</span></div>
         </div>
         <div class="actions">
           <div class="menu-wrap">

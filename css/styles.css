@@ -517,3 +517,50 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* All jobs vs. single job: the portfolio page keeps the dark photo banner; a job page uses a light
+   ledger header led by a large job number, so the two never look alike. */
+.page-portfolio .hero h1 { font-size: 46px; letter-spacing: -0.035em; }
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 7px; }
+.hero-tag { margin-top: 8px; font-size: 16px; color: #c9d1de; }
+
+.page-job { --job-band: #0b1220; }
+.page-job .crumbs { margin-bottom: 14px; }
+.job-head {
+  display: flex; margin-bottom: 24px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 10px 28px -14px rgba(16, 24, 40, .22);
+}
+.job-head-id {
+  flex: none; width: 210px; padding: 26px 24px; display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  background: var(--job-band); color: #fff; border-right: 4px solid var(--brand);
+}
+.job-head-label { font-size: 11.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #f7a26b; }
+.job-head-no { font-family: var(--mono); font-size: 38px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.job-head-main { flex: 1; min-width: 0; padding: 24px 28px; }
+.job-head-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.job-head h1 { flex: 1 1 280px; font-size: 28px; line-height: 1.2; letter-spacing: -0.025em; font-weight: 600; }
+.job-head-desc { margin-top: 10px; font-size: 16px; line-height: 1.55; color: var(--text); max-width: 900px; white-space: pre-line; }
+.job-head-meta { display: flex; flex-wrap: wrap; gap: 10px 32px; margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--border); }
+.job-head-meta dt { font-size: 11.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+.job-head-meta dd { margin: 3px 0 0; font-size: 13.5px; font-weight: 500; }
+.job-head-meta .mono { font-family: var(--mono); }
+
+/* The job's tab bar sticks to the top while scrolling and carries the job number, so it is always visible. */
+.job-tabs { position: sticky; top: 0; z-index: 20; background: var(--bg); align-items: center; }
+.job-tabs-id { display: inline-flex; align-items: center; gap: 8px; padding-right: 14px; margin-right: 6px; border-right: 1px solid var(--border);
+  font-size: 13px; color: var(--text-2); max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.job-tabs-id b { font-family: var(--mono); font-weight: 600; color: #fff; background: var(--job-band); padding: 3px 8px; border-radius: 6px; flex: none; }
+
+@media (max-width: 900px) {
+  .job-head { flex-direction: column; }
+  .job-head-id { width: auto; flex-direction: row; align-items: baseline; gap: 12px; padding: 16px 20px; border-right: 0; border-bottom: 4px solid var(--brand); }
+  .job-head-no { font-size: 30px; }
+  .job-head-main { padding: 18px 20px; }
+  .job-tabs-id span, .job-tabs-id { max-width: 140px; }
+}
+@media (max-width: 640px) {
+  .page-portfolio .hero h1 { font-size: 34px; }
+  .job-head h1 { font-size: 22px; }
+  .job-head-desc { font-size: 15px; }
+  .job-tabs-id { display: none; }
+}
