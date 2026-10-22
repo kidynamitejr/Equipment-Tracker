@@ -5,8 +5,10 @@ import { uid, today, addDays } from './util.js';
 
 const KEY = 'equipment-tracker.v1';
 // Bump when the sample data changes. Browsers still holding an untouched older sample set get the new one.
-const DEMO_VERSION = 2;
+const DEMO_VERSION = 3;
 const OLD_DEMO_JOBS = ['24-1187', '25-0214'];
+// Sample job numbers moved to the 1000XXX format. Saved data still using the old numbers is renamed on load.
+const RENAMED_JOBS = { '24-1187': '1000482', '25-0214': '1000639', '25-0388': '1000715', '25-0412': '1000758', '26-0031': '1000893', '24-1302': '1000517' };
 const listeners = new Set();
 let db = load();
 
@@ -25,8 +27,21 @@ function load() {
   if (!data || untouchedOldDemo || (data.demoVersion && data.demoVersion < DEMO_VERSION && !data.activity.length)) {
     data = seed();
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
+  } else if (renameOldJobNumbers(data)) {
+    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
   }
   return data;
+}
+
+function renameOldJobNumbers(data) {
+  const old = Object.keys(RENAMED_JOBS);
+  if (!data.jobs.some(j => old.includes(j.number))) return false;
+  const swap = t => typeof t === 'string' ? t.replace(/\b(24-1187|25-0214|25-0388|25-0412|26-0031|24-1302)\b/g, n => RENAMED_JOBS[n]) : t;
+  data.jobs.forEach(j => { if (RENAMED_JOBS[j.number]) j.number = RENAMED_JOBS[j.number]; });
+  data.equipment.forEach(e => { e.notes = swap(e.notes); });
+  data.requests.forEach(r => { r.notes = swap(r.notes); r.completionNotes = swap(r.completionNotes); });
+  data.activity.forEach(a => { a.text = swap(a.text); });
+  return true;
 }
 
 function persist() {
@@ -193,7 +208,7 @@ function seed() {
   const t = today();
   const d = n => addDays(t, n);
   const j1 = {
-    id: uid('job'), number: '24-1187', name: 'Gulf Coast Ethylene Cracker Expansion', jdeId: 'JDE-40871', companyId: '100',
+    id: uid('job'), number: '1000482', name: 'Gulf Coast Ethylene Cracker Expansion', jdeId: 'JDE-40871', companyId: '100',
     clientId: 'C-2291', clientName: 'Meridian Petrochemical', contractType: 'Cost Plus', pm: 'Daniel Reyes',
     pa: 'Priya Natarajan', equipContact: 'Marcus Hale (281) 555-0142', address: '4100 Refinery Rd, Baytown, TX 77520',
     markupEquipment: 12, markupNoFuel: 0, markupStdFuel: 4, markupHighFuel: 7, salesTax: 8.25,
@@ -202,7 +217,7 @@ function seed() {
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   };
   const j2 = {
-    id: uid('job'), number: '25-0214', name: 'Lake Charles LNG Train 3 Turnaround', jdeId: 'JDE-41502', companyId: '100',
+    id: uid('job'), number: '1000639', name: 'Lake Charles LNG Train 3 Turnaround', jdeId: 'JDE-41502', companyId: '100',
     clientId: 'C-1840', clientName: 'Calcasieu LNG Partners', contractType: 'T&M', pm: 'Rachel Okafor',
     pa: 'Tom Brennan', equipContact: 'Luis Ortega (337) 555-0187', address: '2200 Industrial Pkwy, Lake Charles, LA 70601',
     markupEquipment: 10, markupNoFuel: 0, markupStdFuel: 5, markupHighFuel: 8, salesTax: 9.75,
@@ -236,7 +251,7 @@ function seed() {
     { id: uid('req'), jobId: j1.id, equipmentId: equipment[0].id, type: 'forecast', requestedBy: 'Marcus Hale', requestedDate: d(55), reason: 'Furnace module set delayed by two weeks.', status: 'pending', createdAt: new Date(Date.now() - 3600e3 * 26).toISOString() },
   ];
   const j3 = {
-    id: uid('job'), number: '25-0388', name: 'Port Arthur Hydrocracker Revamp', jdeId: 'JDE-41966', companyId: '100',
+    id: uid('job'), number: '1000715', name: 'Port Arthur Hydrocracker Revamp', jdeId: 'JDE-41966', companyId: '100',
     clientId: 'C-3307', clientName: 'Sabine Gulf Refining', contractType: 'Lump Sum', pm: 'Kevin Marsh',
     pa: 'Alicia Gómez', equipContact: 'Darnell Price (409) 555-0119', address: '1801 Savannah Ave, Port Arthur, TX 77640',
     markupEquipment: 15, markupNoFuel: 0, markupStdFuel: 5, markupHighFuel: 9, salesTax: 8.25,
@@ -245,7 +260,7 @@ function seed() {
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   };
   const j4 = {
-    id: uid('job'), number: '25-0412', name: 'Corpus Christi Polyethylene Tie-ins', jdeId: 'JDE-42013', companyId: '110',
+    id: uid('job'), number: '1000758', name: 'Corpus Christi Polyethylene Tie-ins', jdeId: 'JDE-42013', companyId: '110',
     clientId: 'C-2875', clientName: 'Nueces Polymers LLC', contractType: 'Cost Plus', pm: 'Samantha Lee',
     pa: 'Jordan Whitfield', equipContact: 'Ray Delgado (361) 555-0164', address: '7200 Up River Rd, Corpus Christi, TX 78409',
     markupEquipment: 12, markupNoFuel: 0, markupStdFuel: 4, markupHighFuel: 6, salesTax: 8.25,
@@ -254,7 +269,7 @@ function seed() {
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   };
   const j5 = {
-    id: uid('job'), number: '26-0031', name: 'Freeport Chlor-Alkali Unit Expansion', jdeId: 'JDE-42780', companyId: '100',
+    id: uid('job'), number: '1000893', name: 'Freeport Chlor-Alkali Unit Expansion', jdeId: 'JDE-42780', companyId: '100',
     clientId: 'C-1952', clientName: 'Brazosport Chemical Co.', contractType: 'T&M', pm: 'Daniel Reyes',
     pa: 'Priya Natarajan', equipContact: 'Hector Vela (979) 555-0108', address: '2301 N Brazosport Blvd, Freeport, TX 77541',
     markupEquipment: 10, markupNoFuel: 0, markupStdFuel: 3, markupHighFuel: 6, salesTax: 8.25,
@@ -263,7 +278,7 @@ function seed() {
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   };
   const j6 = {
-    id: uid('job'), number: '24-1302', name: 'Beaumont Tank Farm Expansion', jdeId: 'JDE-40995', companyId: '110',
+    id: uid('job'), number: '1000517', name: 'Beaumont Tank Farm Expansion', jdeId: 'JDE-40995', companyId: '110',
     clientId: 'C-2291', clientName: 'Meridian Petrochemical', contractType: 'Unit Price', pm: 'Rachel Okafor',
     pa: 'Tom Brennan', equipContact: 'Curtis Boone (409) 555-0177', address: '3300 Gulf St, Beaumont, TX 77701',
     markupEquipment: 11, markupNoFuel: 0, markupStdFuel: 4, markupHighFuel: 7, salesTax: 8.25,
