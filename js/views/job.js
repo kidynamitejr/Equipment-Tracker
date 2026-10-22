@@ -3,7 +3,7 @@
 import * as store from '../store.js';
 import { jobMetrics, equipmentMetrics, combinedSchedule, dailySchedule } from '../calc.js';
 import { esc, money, compactMoney, fmtDate, pct, today, addDays, debounce } from '../util.js';
-import { icon, canEdit, statusPill, openModal } from '../ui.js';
+import { icon, canEdit, statusPill, openModal, help } from '../ui.js';
 import { openJobForm } from './jobForm.js';
 import { openEquipment } from './equipment.js';
 import { openRequestForm, renderRequestsTab } from './requests.js';
@@ -63,19 +63,19 @@ export function renderJob(app, jobId, tab) {
       </div>
 
       <div class="kpis">
-        <div class="kpi"><div class="kpi-label">Total EAC days</div><div class="kpi-value">${m.eacDays.toLocaleString()}</div>
+        <div class="kpi"><div class="kpi-label">Total EAC days${help('Estimate at completion: days from the first on-rent date to the latest off-rent date (actual or forecast).')}</div><div class="kpi-value">${m.eacDays.toLocaleString()}</div>
           <div class="kpi-foot">${m.start ? `${fmtDate(m.start)} – ${fmtDate(m.end)}` : 'No equipment yet'}</div></div>
-        <div class="kpi"><div class="kpi-label">Total ITD days</div><div class="kpi-value">${m.itdDays.toLocaleString()}</div>
+        <div class="kpi"><div class="kpi-label">Total ITD days${help('Inception to date: days from the first on-rent date through today.')}</div><div class="kpi-value">${m.itdDays.toLocaleString()}</div>
           <div class="kpi-foot">${m.itdEnd ? `${fmtDate(m.start)} – ${fmtDate(m.itdEnd)}` : m.start ? `Starts ${fmtDate(m.start)}` : '—'}</div>
           <div class="meter" title="${m.eacDays ? Math.round(m.itdDays / m.eacDays * 100) : 0}% of EAC days elapsed"><i style="width:${m.eacDays ? Math.min(100, m.itdDays / m.eacDays * 100).toFixed(1) : 0}%"></i></div></div>
-        <div class="kpi"><div class="kpi-label">Total EAC cost</div><div class="kpi-value" title="${money(m.eacCost)}">${compactMoney(m.eacCost)}</div>
+        <div class="kpi"><div class="kpi-label">Total EAC cost${help('Estimate at completion: full expected cost of every rental on this job through its off-rent date, including taxes, mob/demob and one-time costs.')}</div><div class="kpi-value" title="${money(m.eacCost)}">${compactMoney(m.eacCost)}</div>
           <div class="kpi-foot"><span class="pos">${money(m.eacProfit, true)}</span> EAC profit</div></div>
-        <div class="kpi"><div class="kpi-label">Total ITD cost</div><div class="kpi-value" title="${money(m.itdCost)}">${compactMoney(m.itdCost)}</div>
+        <div class="kpi"><div class="kpi-label">Total ITD cost${help('Inception to date: cost incurred from the first on-rent date through today.')}</div><div class="kpi-value" title="${money(m.itdCost)}">${compactMoney(m.itdCost)}</div>
           <div class="kpi-foot"><span class="pos">${money(m.itdProfit, true)}</span> ITD profit</div>
           <div class="meter" title="${m.eacCost ? Math.round(m.itdCost / m.eacCost * 100) : 0}% of EAC cost incurred"><i style="width:${m.eacCost ? Math.min(100, m.itdCost / m.eacCost * 100).toFixed(1) : 0}%"></i></div></div>
-        <div class="kpi"><div class="kpi-label">On rent equipment</div><div class="kpi-value">${m.onRent}</div>
+        <div class="kpi"><div class="kpi-label">On rent equipment${help('Units currently on rent (quantity counted), and how many are due off rent in the next 7 days.')}</div><div class="kpi-value">${m.onRent}</div>
           <div class="kpi-foot">${m.offSoon ? `<span class="warn">${m.offSoon}</span> coming off rent within 7 days` : 'None coming off within 7 days'}</div></div>
-        <div class="kpi"><div class="kpi-label">Monthly cost</div><div class="kpi-value" title="${money(m.monthlyCost)}">${compactMoney(m.monthlyCost)}</div>
+        <div class="kpi"><div class="kpi-label">Monthly cost${help('Cost incurred over the last 30 days.')}</div><div class="kpi-value" title="${money(m.monthlyCost)}">${compactMoney(m.monthlyCost)}</div>
           <div class="kpi-foot">Last 30 days · <span class="pos">${money(m.monthlyProfit, true)}</span> profit</div></div>
       </div>
 
@@ -166,7 +166,7 @@ function renderEquipmentTable(el, job, list, f, { coe = false, onOpen }) {
         <span class="result-count">${rows.length} of ${list.length} line${list.length === 1 ? '' : 's'}</span>
       </div>
       ${rows.length ? `
-      <div class="table-wrap"><table class="data">
+      <div class="table-wrap"><table class="data cards">
         <thead><tr>
           <th class="col-req">Request</th>
           ${COLUMNS.map(([k, l, , cls]) => `<th class="sortable ${cls || ''}" data-sort="${k}">${l}<span class="sort">${f.sort === k ? (f.dir > 0 ? '▲' : '▼') : ''}</span></th>`).join('')}
@@ -181,25 +181,25 @@ function renderEquipmentTable(el, job, list, f, { coe = false, onOpen }) {
         ? `<button class="btn btn-xs" data-request="${e.id}" title="Request off rent, forecast change, or transfer">${icon('swap', 13)} Request</button>`
         : '<span class="muted">—</span>';
     return `<tr data-eq="${e.id}">
-              <td class="col-req">${reqCell}</td>
-              <td class="col-eqno mono strong">${esc(e.equipNo || '—')}</td>
-              <td class="desc" title="${esc(e.description)}">${esc(e.description)}</td>
-              <td class="mono">${esc(e.po || '—')}</td>
-              <td class="mono">${esc(e.costCode || '—')}</td>
-              <td>${esc(e.vendor || '—')}</td>
-              <td class="num">${esc(e.qty)}</td>
-              <td>${statusPill(e.status)}</td>
-              <td>${fmtDate(e.onRentDate)}</td>
-              <td><div class="cell-stack"><span>${fmtDate(m.end)}${dueSoon ? '<span class="tag tag-warn">≤ 7 days</span>' : ''}</span><span class="secondary">${e.status === 'off' ? 'Actual' : e.forecastOffDate ? 'Forecast' : 'No forecast'}</span></div></td>
-              <td class="num">${m.eacDays}</td>
-              <td class="num">${money(m.monthlyCost)}</td>
-              <td class="num">${money(m.itdCost)}</td>
-              <td class="num">${money(m.eacCost)}</td>
-              <td class="num profit">${money(m.itdProfit)}</td>
+              <td data-label="Request" class="col-req">${reqCell}</td>
+              <td data-label="Equip #" class="col-eqno mono strong">${esc(e.equipNo || '—')}</td>
+              <td data-label="Description" class="desc" title="${esc(e.description)}">${esc(e.description)}</td>
+              <td data-label="PO #" class="mono">${esc(e.po || '—')}</td>
+              <td data-label="Cost code" class="mono">${esc(e.costCode || '—')}</td>
+              <td data-label="Vendor">${esc(e.vendor || '—')}</td>
+              <td data-label="Qty" class="num">${esc(e.qty)}</td>
+              <td data-label="Status">${statusPill(e.status)}</td>
+              <td data-label="On rent">${fmtDate(e.onRentDate)}</td>
+              <td data-label="Off rent"><div class="cell-stack"><span>${fmtDate(m.end)}${dueSoon ? '<span class="tag tag-warn">≤ 7 days</span>' : ''}</span><span class="secondary">${e.status === 'off' ? 'Actual' : e.forecastOffDate ? 'Forecast' : 'No forecast'}</span></div></td>
+              <td data-label="Days" class="m-hide num">${m.eacDays}</td>
+              <td data-label="Monthly cost" class="m-hide num">${money(m.monthlyCost)}</td>
+              <td data-label="Rental cost ITD" class="num">${money(m.itdCost)}</td>
+              <td data-label="Rental cost EAC" class="num">${money(m.eacCost)}</td>
+              <td data-label="Profit to date" class="m-hide num profit">${money(m.itdProfit)}</td>
             </tr>`;
   }).join('')}
         </tbody>
-        <tfoot><tr>
+        <tfoot><tr class="m-total">
           <td class="col-req">Total${filtered ? ' (filtered)' : ''}</td><td class="col-eqno"></td><td colspan="4"></td><td class="num">${tot.qty}</td><td colspan="4"></td>
           <td class="num">${money(tot.mo)}</td><td class="num">${money(tot.itd)}</td><td class="num">${money(tot.eac)}</td><td class="num profit">${money(tot.p)}</td>
         </tr></tfoot>

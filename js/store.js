@@ -88,6 +88,7 @@ export function deleteEquipment(id) {
 // Requests
 export const requestsForJob = jobId => db.requests.filter(r => r.jobId === jobId)
   .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export const allRequests = () => db.requests.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 export const request = id => db.requests.find(r => r.id === id);
 export const openRequestFor = equipmentId => db.requests.find(r => r.equipmentId === equipmentId && r.status === 'pending');
 

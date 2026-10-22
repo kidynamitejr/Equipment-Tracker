@@ -1,11 +1,15 @@
 import * as store from '../store.js';
 import { jobMetrics } from '../calc.js';
 import { esc, money, compactMoney, fmtDate, debounce } from '../util.js';
-import { icon, canEdit } from '../ui.js';
+import { icon, canEdit, help } from '../ui.js';
 import { openJobForm } from './jobForm.js';
 import { exportPortfolioExcel, exportPortfolioPdf } from '../export.js';
 
 const state = { q: '', sort: 'number', dir: 1 };
+const GUIDE_KEY = 'equipment-tracker.guide-hidden';
+function showGuide() {
+  try { return localStorage.getItem(GUIDE_KEY) !== '1'; } catch (e) { return true; }
+}
 
 export function jobRows() {
   return store.jobs().map(j => {
@@ -53,12 +57,25 @@ export function renderJobs(app) {
         </div>
       </div>
 
+      ${showGuide() ? `
+      <div class="guide card">
+        <div class="guide-head">
+          <div><h3>How FleetLedger works</h3><p class="muted">Four steps from vendor PO to off rent.</p></div>
+          <button class="btn btn-sm btn-ghost" data-hide-guide>Hide</button>
+        </div>
+        <ol class="guide-steps">
+          <li><strong>Set up the job</strong><span>Click <em>New job</em> and enter the job number, client, markups and sales tax. Every piece of equipment on the job uses these as its defaults.</span></li>
+          <li><strong>Add rented equipment</strong><span>After issuing the vendor PO, open the job and click <em>Add equipment</em>. Enter the PO, rates and on-rent date, and the costs calculate automatically.</span></li>
+          <li><strong>Field requests changes</strong><span>When a unit is no longer needed, or its date moves, anyone can click <em>Request</em> on that line to ask for an off rent, a new forecast date, or a transfer.</span></li>
+          <li><strong>Procurement completes it</strong><span>Open <a href="#/requests">Requests</a>, call the vendor, then click <em>Complete request</em>. The equipment updates on its own.</span></li>
+        </ol>
+      </div>` : ''}
       <div class="kpis">
-        <div class="kpi"><div class="kpi-label">Total EAC cost</div><div class="kpi-value">${compactMoney(tot.eac)}</div><div class="kpi-foot"><span class="pos">${compactMoney(tot.eacP)}</span> EAC profit</div></div>
-        <div class="kpi"><div class="kpi-label">Total ITD cost</div><div class="kpi-value">${compactMoney(tot.itd)}</div><div class="kpi-foot"><span class="pos">${compactMoney(tot.itdP)}</span> profit to date</div></div>
-        <div class="kpi"><div class="kpi-label">Monthly cost</div><div class="kpi-value">${compactMoney(tot.mo)}</div><div class="kpi-foot"><span class="pos">${compactMoney(tot.moP)}</span> profit · last 30 days</div></div>
-        <div class="kpi"><div class="kpi-label">On rent</div><div class="kpi-value">${tot.on}</div><div class="kpi-foot">${tot.soon ? `<span class="warn">${tot.soon}</span> off rent within 7 days` : 'None due off within 7 days'}</div></div>
-        <div class="kpi"><div class="kpi-label">Open field requests</div><div class="kpi-value">${tot.reqs}</div><div class="kpi-foot">Awaiting procurement</div></div>
+        <div class="kpi"><div class="kpi-label">Total EAC cost${help('Estimate at completion: full expected cost of every rental on this job through its off-rent date, including taxes, mob/demob and one-time costs.')}</div><div class="kpi-value">${compactMoney(tot.eac)}</div><div class="kpi-foot"><span class="pos">${compactMoney(tot.eacP)}</span> EAC profit</div></div>
+        <div class="kpi"><div class="kpi-label">Total ITD cost${help('Inception to date: cost incurred from the first on-rent date through today.')}</div><div class="kpi-value">${compactMoney(tot.itd)}</div><div class="kpi-foot"><span class="pos">${compactMoney(tot.itdP)}</span> profit to date</div></div>
+        <div class="kpi"><div class="kpi-label">Monthly cost${help('Cost incurred over the last 30 days.')}</div><div class="kpi-value">${compactMoney(tot.mo)}</div><div class="kpi-foot"><span class="pos">${compactMoney(tot.moP)}</span> profit · last 30 days</div></div>
+        <div class="kpi"><div class="kpi-label">On rent${help('Units currently on rent across all jobs.')}</div><div class="kpi-value">${tot.on}</div><div class="kpi-foot">${tot.soon ? `<span class="warn">${tot.soon}</span> off rent within 7 days` : 'None due off within 7 days'}</div></div>
+        <div class="kpi"><div class="kpi-label">Open field requests${help('Requests from the field waiting for procurement to call the vendor and complete them.')}</div><div class="kpi-value">${tot.reqs}</div><div class="kpi-foot"><a href="#/requests">${tot.reqs ? 'Review requests →' : 'View request history →'}</a></div></div>
         <div class="kpi"><div class="kpi-label">Active jobs</div><div class="kpi-value">${all.length}</div><div class="kpi-foot">${all.reduce((n, r) => n + r.m.lines, 0)} equipment lines</div></div>
       </div>
 
@@ -69,7 +86,7 @@ export function renderJobs(app) {
           <span class="result-count">${rows.length} of ${all.length} jobs</span>
         </div>
         ${rows.length ? `
-        <div class="table-wrap"><table class="data">
+        <div class="table-wrap"><table class="data cards">
           <thead><tr>
             ${th('number', 'Job')}${th('client', 'Client')}${th('pm', 'Project manager')}
             ${th('on', 'On rent', 'num')}${th('mo', 'Monthly cost', 'num')}${th('itd', 'ITD cost', 'num')}${th('eac', 'EAC cost', 'num')}${th('reqs', 'Requests', 'num')}
@@ -77,14 +94,14 @@ export function renderJobs(app) {
           <tbody>
             ${rows.map(r => `
               <tr data-job="${r.job.id}">
-                <td><div class="cell-stack"><span class="primary">${esc(r.job.number)}</span><span class="secondary">${esc(r.job.name)}</span></div></td>
-                <td><div class="cell-stack"><span>${esc(r.job.clientName || '—')}</span><span class="secondary">${esc(r.job.contractType || '')}</span></div></td>
-                <td>${esc(r.job.pm || '—')}</td>
-                <td class="num">${r.m.onRent}${r.m.offSoon ? `<span class="tag tag-warn">${r.m.offSoon} soon</span>` : ''}</td>
-                <td class="num">${money(r.m.monthlyCost)}</td>
-                <td class="num"><div class="cell-stack"><span>${money(r.m.itdCost)}</span><span class="secondary profit">${money(r.m.itdProfit)} profit</span></div></td>
-                <td class="num"><div class="cell-stack"><span>${money(r.m.eacCost)}</span><span class="secondary profit">${money(r.m.eacProfit)} profit</span></div></td>
-                <td class="num">${r.openReqs ? `<span class="badge badge-alert">${r.openReqs}</span>` : '<span class="muted">—</span>'}</td>
+                <td data-label="Job"><div class="cell-stack"><span class="primary">${esc(r.job.number)}</span><span class="secondary">${esc(r.job.name)}</span></div></td>
+                <td data-label="Client"><div class="cell-stack"><span>${esc(r.job.clientName || '—')}</span><span class="secondary">${esc(r.job.contractType || '')}</span></div></td>
+                <td data-label="Project manager">${esc(r.job.pm || '—')}</td>
+                <td data-label="On rent" class="num"><span>${r.m.onRent}${r.m.offSoon ? `<span class="tag tag-warn">${r.m.offSoon} soon</span>` : ''}</span></td>
+                <td data-label="Monthly cost" class="num">${money(r.m.monthlyCost)}</td>
+                <td data-label="ITD cost" class="num"><div class="cell-stack"><span>${money(r.m.itdCost)}</span><span class="secondary profit">${money(r.m.itdProfit)} profit</span></div></td>
+                <td data-label="EAC cost" class="num"><div class="cell-stack"><span>${money(r.m.eacCost)}</span><span class="secondary profit">${money(r.m.eacProfit)} profit</span></div></td>
+                <td data-label="Requests" class="num">${r.openReqs ? `<span class="badge badge-alert">${r.openReqs}</span>` : '<span class="muted">—</span>'}</td>
               </tr>`).join('')}
           </tbody>
         </table></div>` : `
@@ -95,6 +112,7 @@ export function renderJobs(app) {
     </div>`;
 
   app.querySelector('[data-new]')?.addEventListener('click', () => openJobForm());
+  app.querySelector('[data-hide-guide]')?.addEventListener('click', () => { try { localStorage.setItem(GUIDE_KEY, '1'); } catch (e) { /* ignore */ } renderJobs(app); });
   const qi = app.querySelector('[data-q]');
   qi.addEventListener('input', debounce(() => {
     state.q = qi.value;

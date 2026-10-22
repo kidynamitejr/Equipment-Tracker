@@ -3,7 +3,7 @@
 import * as store from '../store.js';
 import { equipmentMetrics, dailySchedule, fuelMarkupForJob } from '../calc.js';
 import { esc, money, fmtDate, today, num } from '../util.js';
-import { openDrawer, readForm, validate, toast, confirmDialog, icon, canEdit, statusPill } from '../ui.js';
+import { openDrawer, readForm, validate, toast, confirmDialog, icon, canEdit, statusPill, help } from '../ui.js';
 import { renderCalendar } from './calendar.js';
 import { openRequestForm, requestCard } from './requests.js';
 
@@ -26,7 +26,7 @@ export function openEquipment(jobId, equipmentId, { coe = false, tab = 'details'
     onClose: () => unsub?.(),
     render: (panel, api) => {
       const eq = st.id ? store.equipment(st.id) : null;
-      if (st.id && !eq) { api.close(); return; }
+      if (st.id && !eq) { api.forceClose(); return; }
       const data = eq || newEquipmentDefaults(job, coe);
       const m = eq ? equipmentMetrics(eq) : null;
       const editable = canEdit();
@@ -49,10 +49,10 @@ export function openEquipment(jobId, equipmentId, { coe = false, tab = 'details'
             <button class="icon-btn" data-x aria-label="Close">${icon('x', 18)}</button>
           </div>
           ${m ? `<div class="drawer-kpis">
-            <div class="kpi"><div class="kpi-label">Rental cost EAC</div><div class="kpi-value">${money(m.eacCost)}</div><div class="kpi-foot">${m.eacDays} days · <span class="pos">${money(m.eacProfit)}</span></div></div>
-            <div class="kpi"><div class="kpi-label">Rental cost ITD</div><div class="kpi-value">${money(m.itdCost)}</div><div class="kpi-foot">${m.itdDays} days to date</div></div>
-            <div class="kpi"><div class="kpi-label">Profit to date</div><div class="kpi-value profit">${money(m.itdProfit)}</div><div class="kpi-foot">${num(eq.equipMarkup) + num(eq.fuelMarkup)}% total markup</div></div>
-            <div class="kpi"><div class="kpi-label">Monthly rental cost</div><div class="kpi-value">${money(m.monthlyCost)}</div><div class="kpi-foot">Last 30 days · <span class="pos">${money(m.monthlyProfit)}</span></div></div>
+            <div class="kpi"><div class="kpi-label">Rental cost EAC${help('Full expected cost of this line through its off-rent date.')}</div><div class="kpi-value">${money(m.eacCost)}</div><div class="kpi-foot">${m.eacDays} days · <span class="pos">${money(m.eacProfit)}</span></div></div>
+            <div class="kpi"><div class="kpi-label">Rental cost ITD${help('Cost incurred from the on-rent date through today.')}</div><div class="kpi-value">${money(m.itdCost)}</div><div class="kpi-foot">${m.itdDays} days to date</div></div>
+            <div class="kpi"><div class="kpi-label">Profit to date${help('Markup earned so far: base cost to date times equipment markup plus fuel markup.')}</div><div class="kpi-value profit">${money(m.itdProfit)}</div><div class="kpi-foot">${num(eq.equipMarkup) + num(eq.fuelMarkup)}% total markup</div></div>
+            <div class="kpi"><div class="kpi-label">Monthly rental cost${help('Cost incurred over the last 30 days.')}</div><div class="kpi-value">${money(m.monthlyCost)}</div><div class="kpi-foot">Last 30 days · <span class="pos">${money(m.monthlyProfit)}</span></div></div>
           </div>` : '<div style="height:14px"></div>'}
           ${tabs.length ? `<nav class="tabs">${tabs.map(([k, l]) => `<a href="javascript:void 0" data-tab="${k}" class="${st.tab === k ? 'active' : ''}">${l}</a>`).join('')}</nav>` : ''}
         </div>
@@ -71,7 +71,7 @@ export function openEquipment(jobId, equipmentId, { coe = false, tab = 'details'
         const ok = await confirmDialog({ title: 'Delete equipment?', danger: true, confirmLabel: 'Delete',
           message: `This permanently removes <strong>${esc(eq.equipNo || eq.description)}</strong> and its requests from job ${esc(job.number)}.` });
         if (!ok) return;
-        api.close();
+        api.forceClose();
         store.deleteEquipment(eq.id);
         toast('Equipment deleted');
       });
@@ -124,7 +124,7 @@ function formHtml(job, d, editable) {
   const vendors = [...new Set(store.jobs().flatMap(j => store.equipmentForJob(j.id).map(e => e.vendor)).filter(Boolean))].sort();
   const codes = [...new Set(store.equipmentForJob(job.id).map(e => e.costCode).filter(Boolean))].sort();
   return `
-    <form class="form-card" novalidate ${dis ? 'inert' : ''}>
+    <form class="form-card" novalidate data-track ${dis ? 'inert' : ''}>
       <div class="form-section">
         <h4>Equipment</h4>
         <div class="grid g4">

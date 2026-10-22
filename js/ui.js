@@ -59,13 +59,17 @@ export function openModal({ title, subtitle = '', body, footer = '', size = 'md'
       ${footer ? `<div class="modal-foot">${footer}</div>` : ''}
     </div>`;
   root.appendChild(wrap);
-  const close = () => { wrap.remove(); document.removeEventListener('keydown', onKey); };
-  const onKey = e => { if (e.key === 'Escape') close(); };
+  const dirty = trackDirty(wrap);
+  const close = async (force) => {
+    if (force !== true && dirty.is() && !(await confirmDiscard())) return;
+    wrap.remove(); document.removeEventListener('keydown', onKey);
+  };
+  const onKey = e => { if (e.key === 'Escape' && root.lastElementChild === wrap) close(); };
   document.addEventListener('keydown', onKey);
   wrap.addEventListener('mousedown', e => { if (e.target === wrap) close(); });
-  wrap.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', close));
+  wrap.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => close()));
   requestAnimationFrame(() => wrap.classList.add('open'));
-  const api = { el: wrap.querySelector('.modal'), close };
+  const api = { el: wrap.querySelector('.modal'), close: () => close(true), cancel: () => close(), markClean: dirty.clear };
   onMount?.(api.el, api);
   const first = wrap.querySelector('input:not([type=hidden]),select,textarea');
   first?.focus();
@@ -80,14 +84,34 @@ export function openDrawer({ render, onClose }) {
   wrap.innerHTML = '<aside class="drawer" role="dialog" aria-modal="true"></aside>';
   root.appendChild(wrap);
   const panel = wrap.querySelector('.drawer');
-  const close = () => { wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 180); document.removeEventListener('keydown', onKey); onClose?.(); };
-  const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.overlay:not(.overlay-drawer)')) close(); };
+  const dirty = trackDirty(wrap);
+  const close = async (force) => {
+    if (force !== true && dirty.is() && !(await confirmDiscard())) return;
+    wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 180); document.removeEventListener('keydown', onKey); onClose?.();
+  };
+  const onKey = e => { if (e.key === 'Escape' && root.lastElementChild === wrap) close(); };
   document.addEventListener('keydown', onKey);
   wrap.addEventListener('mousedown', e => { if (e.target === wrap) close(); });
   requestAnimationFrame(() => wrap.classList.add('open'));
-  const api = { panel, close, rerender: () => render(panel, api) };
+  const api = {
+    panel, close: () => close(), forceClose: () => close(true), markClean: dirty.clear, isDirty: dirty.is,
+    rerender: () => { dirty.clear(); render(panel, api); },
+  };
   render(panel, api);
   return api;
+}
+
+// Marks an overlay dirty when a field inside a form[data-track] changes.
+function trackDirty(wrap) {
+  let d = false;
+  const on = e => { if (e.target.closest('form[data-track]')) d = true; };
+  wrap.addEventListener('input', on);
+  wrap.addEventListener('change', on);
+  return { is: () => d, clear: () => { d = false; } };
+}
+
+function confirmDiscard() {
+  return confirmDialog({ title: 'Discard unsaved changes?', message: 'You have changes that have not been saved. Close anyway and lose them?', confirmLabel: 'Discard changes', danger: true });
 }
 
 export function toast(message, kind = 'success') {
@@ -107,7 +131,7 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm', danger
       title, size: 'sm',
       body: `<p>${message}</p>`,
       footer: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-ok>${esc(confirmLabel)}</button>`,
-      onMount: el => el.querySelector('[data-ok]').addEventListener('click', () => { done = true; m.close(); resolve(true); }),
+      onMount: el => { const ok = el.querySelector('[data-ok]'); ok.addEventListener('click', () => { done = true; m.close(); resolve(true); }); setTimeout(() => ok.focus()); },
     });
     const obs = new MutationObserver(() => { if (!m.el.isConnected) { obs.disconnect(); if (!done) resolve(false); } });
     obs.observe(document.getElementById('overlay-root'), { childList: true });
@@ -125,14 +149,24 @@ export function readForm(form) {
   return out;
 }
 
+// Flags empty required fields with an inline message; returns false and focuses the first one.
 export function validate(form) {
   let ok = true;
   form.querySelectorAll('[required]').forEach(f => {
     const bad = !String(f.value).trim();
-    f.closest('.field')?.classList.toggle('invalid', bad);
+    const field = f.closest('.field');
+    field?.classList.toggle('invalid', bad);
+    field?.querySelector('.err')?.remove();
+    if (bad && field) field.insertAdjacentHTML('beforeend', '<div class="err">This field is required.</div>');
     if (bad && ok) { f.focus(); ok = false; }
   });
+  if (!ok) toast('Fill in the highlighted fields to continue.', 'error');
   return ok;
+}
+
+// Small "?" marker that explains a term on hover or tap.
+export function help(text) {
+  return `<span class="help" tabindex="0" role="note" aria-label="${esc(text)}" data-help="${esc(text)}">?</span>`;
 }
 
 export function statusPill(status) {

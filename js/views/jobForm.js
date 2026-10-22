@@ -17,7 +17,7 @@ export function openJobForm(existing) {
   const j = existing || { contractType: 'Cost Plus', markupNoFuel: 0 };
   const contractTypes = ['Cost Plus', 'Lump Sum', 'T&M', 'Unit Price', 'GMP', 'Other'];
   const body = `
-    <form id="job-form" novalidate>
+    <form id="job-form" novalidate data-track>
       <div class="form-section">
         <h4>Job identification</h4>
         <div class="grid g3">

@@ -17,7 +17,7 @@ export function openRequestForm(eq) {
       <div class="row"><span>On rent since</span><span>${fmtDate(eq.onRentDate)}</span></div>
       <div class="row"><span>Current forecast off rent</span><span>${fmtDate(eq.forecastOffDate)}</span></div>
     </div>
-    <form id="req-form" novalidate>
+    <form id="req-form" novalidate data-track>
       <div class="field" style="margin-bottom:14px">
         <label>Request type</label>
         <div class="type-cards">
@@ -59,13 +59,13 @@ export function openRequestForm(eq) {
         setUserName(v.requestedBy);
         store.createRequest({ ...v, jobId: eq.jobId, equipmentId: eq.id });
         m.close();
-        toast('Request sent to procurement');
+        toast('Request sent. Procurement will see it under Requests.');
       });
     },
   });
 }
 
-export function requestCard(r, { compact = false } = {}) {
+export function requestCard(r, { compact = false, showJob = false } = {}) {
   const job = store.job(r.jobId);
   const eq = store.equipment(r.equipmentId);
   const target = r.targetJobId ? store.job(r.targetJobId) : null;
@@ -82,7 +82,7 @@ export function requestCard(r, { compact = false } = {}) {
         <div>
           <h4><span class="pill type-pill-${r.type}">${icon(TYPE_ICON[r.type], 13)} ${store.REQUEST_LABELS[r.type]}</span>
             ${eq ? `<a href="javascript:void 0" data-open-eq="${eq.id}">${esc(eq.equipNo || '—')} · ${esc(eq.description)}</a>` : '<span class="muted">Equipment deleted</span>'} ${statusTag}</h4>
-          <div class="meta">Requested by ${esc(r.requestedBy)} · ${new Date(r.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+          <div class="meta">${showJob && job ? `<a href="#/job/${job.id}/requests" class="job-link">Job ${esc(job.number)} · ${esc(job.name)}</a> · ` : ''}Requested by ${esc(r.requestedBy)} · ${new Date(r.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
             ${done ? ` · ${r.status === 'completed' ? 'Completed' : 'Cancelled'} by ${esc(r.completedBy || '—')} ${new Date(r.completedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}` : ''}</div>
         </div>
         ${!done && canEdit() && !compact ? `<div class="actions">
@@ -162,9 +162,9 @@ function openCompleteForm(r) {
   });
 }
 
-// Requests tab body.
+// Requests list. With a job, that job's requests; with job = null, every job's (the Requests inbox).
 export function renderRequestsTab(el, job, state, onOpenEquipment) {
-  const all = store.requestsForJob(job.id);
+  const all = job ? store.requestsForJob(job.id) : store.allRequests();
   const counts = { pending: 0, completed: 0, cancelled: 0 };
   all.forEach(r => { counts[r.status]++; });
   const list = all.filter(r => state.reqFilter === 'all' || r.status === state.reqFilter)
@@ -183,8 +183,8 @@ export function renderRequestsTab(el, job, state, onOpenEquipment) {
         <span class="spacer"></span>
         <span class="result-count">${canEdit() ? 'Contact the vendor, then complete the request to apply the change.' : 'Requests are reviewed by procurement.'}</span>
       </div>
-      ${list.length ? `<div class="req-list">${list.map(r => requestCard(r)).join('')}</div>`
-    : `<div class="empty">${icon('inbox', 36)}<h4>No ${state.reqFilter === 'all' ? '' : state.reqFilter} requests</h4><p>Field requests to off rent, change forecast dates, or transfer equipment appear here.</p></div>`}
+      ${list.length ? `<div class="req-list">${list.map(r => requestCard(r, { showJob: !job })).join('')}</div>`
+    : `<div class="empty">${icon('inbox', 36)}<h4>No ${state.reqFilter === 'all' ? '' : state.reqFilter} requests</h4><p>${state.reqFilter === 'pending' ? 'You are all caught up. ' : ''}When someone uses the <strong>Request</strong> button on a piece of equipment, it shows up here for procurement.</p></div>`}
     </div>`;
   el.querySelectorAll('[name=reqf]').forEach(i => i.addEventListener('change', () => { state.reqFilter = i.value; renderRequestsTab(el, job, state, onOpenEquipment); }));
   el.querySelector('[data-rtype]').addEventListener('change', e => { state.reqType = e.target.value; renderRequestsTab(el, job, state, onOpenEquipment); });
