@@ -39,7 +39,7 @@ export function renderJob(app, jobId, tab) {
   app.innerHTML = `
     <div class="page">
       <div class="crumbs"><a href="#/jobs">Jobs</a>${icon('chevR', 12)}<span>${esc(job.number)}</span></div>
-      <div class="page-head">
+      <div class="page-head hero hero-slim">
         <div>
           <h1><span class="job-chip">${esc(job.number)}</span>${esc(job.name)}</h1>
           <div class="sub">
@@ -60,6 +60,7 @@ export function renderJob(app, jobId, tab) {
           ${canEdit() ? `<button class="btn" data-edit-job>${icon('edit', 15)} Edit job</button>
           <button class="btn btn-primary" data-add>${icon('plus', 15)} Add ${tab === 'coe' ? 'COE' : 'equipment'}</button>` : ''}
         </div>
+        <a class="hero-credit" href="https://unsplash.com/photos/industrial-refinery-towers-and-crane-eXblvZg_ulc" target="_blank" rel="noopener">Photo: Red Shuheart / Unsplash</a>
       </div>
 
       <div class="kpis">

@@ -40,9 +40,10 @@ export function renderJobs(app) {
 
   app.innerHTML = `
     <div class="page">
-      <div class="page-head">
+      <div class="page-head hero">
         <div>
-          <h1>Jobs</h1>
+          <div class="hero-eyebrow">Halvorsen Industrial · Equipment Rental Control</div>
+          <h1>Every rental. Every job.<br>One ledger.</h1>
           <div class="sub"><span>${all.length} active job${all.length === 1 ? '' : 's'}</span><span>As of ${fmtDate(new Date().toISOString().slice(0, 10))}</span></div>
         </div>
         <div class="actions">
@@ -55,6 +56,7 @@ export function renderJobs(app) {
           </div>
           ${canEdit() ? `<button class="btn btn-primary" data-new>${icon('plus', 15)} New job</button>` : ''}
         </div>
+        <a class="hero-credit" href="https://unsplash.com/photos/industrial-refinery-towers-and-crane-eXblvZg_ulc" target="_blank" rel="noopener">Photo: Red Shuheart / Unsplash</a>
       </div>
 
       ${showGuide() ? `

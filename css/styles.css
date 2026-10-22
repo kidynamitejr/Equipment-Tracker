@@ -484,6 +484,34 @@ table.data th.col-req, table.data th.col-eqno { z-index: 2; }
   table.data.cards tbody tr { display: flex; flex-direction: column; }
 }
 
+/* Hero: photo banner behind the page title. The gradient keeps text legible and still reads if the photo fails to load. */
+.hero {
+  position: relative; align-items: flex-end; min-height: 236px; padding: 32px 32px 28px; margin-bottom: 24px;
+  border-radius: 18px; color: #fff; isolation: isolate;
+  background:
+    linear-gradient(100deg, rgba(8, 13, 24, .92) 0%, rgba(8, 13, 24, .72) 42%, rgba(8, 13, 24, .18) 100%),
+    url("https://images.unsplash.com/photo-1786532852258-8305f40f9925?auto=format&fit=crop&crop=entropy&w=2400&h=720&q=75") center 60% / cover no-repeat,
+    linear-gradient(135deg, #1b2a44, #0b1220);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 12px 32px -12px rgba(16, 24, 40, .35);
+}
+.hero-slim { min-height: 168px; padding: 26px 28px 24px; }
+.hero h1 { color: #fff; font-size: 34px; line-height: 1.12; letter-spacing: -0.03em; font-weight: 600; }
+.hero-slim h1 { font-size: 26px; }
+.hero-eyebrow { font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: #f7a26b; margin-bottom: 10px; }
+.hero .sub { margin-top: 14px; }
+.hero .sub span { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .16); color: #e8ecf3; backdrop-filter: blur(8px); }
+.hero .job-chip { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .2); color: #fff; }
+.hero .btn:not(.btn-primary) { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .22); color: #fff; backdrop-filter: blur(8px); box-shadow: none; }
+.hero .btn:not(.btn-primary):hover { background: rgba(255, 255, 255, .2); }
+.hero .menu { color: var(--text); }
+.hero-credit { position: absolute; right: 14px; bottom: 8px; font-size: 10.5px; color: rgba(255, 255, 255, .55); }
+.hero-credit:hover { color: #fff; }
+@media (max-width: 640px) {
+  .hero { min-height: 0; padding: 22px 18px 30px; border-radius: 14px; }
+  .hero h1 { font-size: 25px; }
+  .hero-slim h1 { font-size: 21px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
