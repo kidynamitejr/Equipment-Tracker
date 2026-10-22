@@ -5,7 +5,15 @@ import { icon, canEdit, help } from '../ui.js';
 import { openJobForm } from './jobForm.js';
 import { exportPortfolioExcel, exportPortfolioPdf } from '../export.js';
 
-const state = { q: '', sort: 'number', dir: 1 };
+const FILTERS = { client: '', pm: '', contract: '', company: '', flag: '' };
+const state = { q: '', sort: 'number', dir: 1, ...FILTERS };
+const SORTS = [
+  ['number', 1, 'Job number (A–Z)'], ['number', -1, 'Job number (Z–A)'], ['name', 1, 'Job name (A–Z)'],
+  ['client', 1, 'Client (A–Z)'], ['pm', 1, 'Project manager (A–Z)'], ['start', -1, 'Newest start date'], ['start', 1, 'Oldest start date'],
+  ['eac', -1, 'EAC cost (high–low)'], ['itd', -1, 'ITD cost (high–low)'], ['mo', -1, 'Monthly cost (high–low)'],
+  ['on', -1, 'Most on rent'], ['reqs', -1, 'Most open requests'],
+];
+const uniq = (rows, f) => [...new Set(rows.map(f).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
 const GUIDE_KEY = 'equipment-tracker.guide-hidden';
 function showGuide() {
   try { return localStorage.getItem(GUIDE_KEY) !== '1'; } catch (e) { return true; }
@@ -27,10 +35,23 @@ export function renderJobs(app) {
   }, { eac: 0, eacP: 0, itd: 0, itdP: 0, mo: 0, moP: 0, on: 0, soon: 0, reqs: 0 });
 
   const q = state.q.toLowerCase();
-  const rows = all.filter(r => !q || [r.job.number, r.job.name, r.job.clientName, r.job.pm, r.job.jdeId].join(' ').toLowerCase().includes(q));
+  const rows = all.filter(({ job: j, m, openReqs }) => {
+    if (q && ![j.number, j.name, j.clientName, j.clientId, j.pm, j.pa, j.jdeId, j.companyId, j.contractType, j.address, j.equipContact, j.description]
+      .join(' ').toLowerCase().includes(q)) return false;
+    if (state.client && j.clientName !== state.client) return false;
+    if (state.pm && j.pm !== state.pm) return false;
+    if (state.contract && j.contractType !== state.contract) return false;
+    if (state.company && j.companyId !== state.company) return false;
+    if (state.flag === 'requests' && !openReqs) return false;
+    if (state.flag === 'soon' && !m.offSoon) return false;
+    if (state.flag === 'onrent' && !m.onRent) return false;
+    if (state.flag === 'idle' && m.onRent) return false;
+    return true;
+  });
+  const filtered = Object.keys(FILTERS).some(k => state[k]) || state.q;
   const key = {
     number: r => r.job.number, name: r => r.job.name, client: r => r.job.clientName, pm: r => r.job.pm,
-    on: r => r.m.onRent, eac: r => r.m.eacCost, itd: r => r.m.itdCost, mo: r => r.m.monthlyCost, reqs: r => r.openReqs,
+    start: r => r.m.start || '', on: r => r.m.onRent, eac: r => r.m.eacCost, itd: r => r.m.itdCost, mo: r => r.m.monthlyCost, reqs: r => r.openReqs,
   }[state.sort];
   rows.sort((a, b) => {
     const x = key(a), y = key(b);
@@ -83,8 +104,21 @@ export function renderJobs(app) {
 
       <div class="card">
         <div class="toolbar">
-          <div class="search">${icon('search', 15)}<input type="search" placeholder="Search job number, name, client, PM…" value="${esc(state.q)}" data-q aria-label="Search jobs"></div>
+          <div class="search">${icon('search', 15)}<input type="search" placeholder="Search job #, name, client, PM, JDE ID, address…" value="${esc(state.q)}" data-q aria-label="Search jobs"></div>
+          <select data-jf="client" aria-label="Client"><option value="">All clients</option>${uniq(all, r => r.job.clientName).map(v => `<option ${state.client === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
+          <select data-jf="pm" aria-label="Project manager"><option value="">All project managers</option>${uniq(all, r => r.job.pm).map(v => `<option ${state.pm === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
+          <select data-jf="contract" aria-label="Contract type"><option value="">All contract types</option>${uniq(all, r => r.job.contractType).map(v => `<option ${state.contract === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
+          <select data-jf="company" aria-label="Company ID"><option value="">All company IDs</option>${uniq(all, r => r.job.companyId).map(v => `<option value="${esc(v)}" ${state.company === v ? 'selected' : ''}>Company ${esc(v)}</option>`).join('')}</select>
+          <select data-jf="flag" aria-label="Show">
+            ${[['', 'All jobs'], ['requests', 'Has open requests'], ['soon', 'Equipment off rent ≤ 7 days'], ['onrent', 'Has equipment on rent'], ['idle', 'Nothing on rent']]
+    .map(([v, l]) => `<option value="${v}" ${state.flag === v ? 'selected' : ''}>${l}</option>`).join('')}
+          </select>
+          ${filtered ? '<button class="btn btn-sm btn-ghost" data-clear-jobs>Clear filters</button>' : ''}
           <span class="spacer"></span>
+          <label class="sort-by"><span>Sort</span><select data-sortby aria-label="Sort jobs">
+            ${SORTS.map(([k, d, l]) => `<option value="${k}:${d}" ${state.sort === k && state.dir === d ? 'selected' : ''}>${l}</option>`).join('')}
+            ${SORTS.some(([k, d]) => state.sort === k && state.dir === d) ? '' : '<option selected>Custom (column)</option>'}
+          </select></label>
           <span class="result-count">${rows.length} of ${all.length} jobs</span>
         </div>
         ${rows.length ? `
@@ -107,8 +141,8 @@ export function renderJobs(app) {
               </tr>`).join('')}
           </tbody>
         </table></div>` : `
-        <div class="empty">${icon('building', 36)}<h4>${all.length ? 'No jobs match your search' : 'No jobs yet'}</h4>
-          <p>${all.length ? 'Try a different search term.' : canEdit() ? 'Create your first job to start tracking rented equipment.' : 'Procurement has not created any jobs yet.'}</p></div>`}
+        <div class="empty">${icon('building', 36)}<h4>${all.length ? 'No jobs match these filters' : 'No jobs yet'}</h4>
+          <p>${all.length ? 'Try a different search, or clear the filters to see every job.' : canEdit() ? 'Create your first job to start tracking rented equipment.' : 'Procurement has not created any jobs yet.'}</p></div>`}
       </div>
       <p class="footer-note">Data is stored in this browser. Use Data &amp; settings to back it up or move it to another computer.</p>
     </div>`;
@@ -122,6 +156,12 @@ export function renderJobs(app) {
     const n = app.querySelector('[data-q]');
     n.focus(); n.setSelectionRange(n.value.length, n.value.length);
   }, 150));
+  app.querySelectorAll('select[data-jf]').forEach(sel => sel.addEventListener('change', () => { state[sel.dataset.jf] = sel.value; renderJobs(app); }));
+  app.querySelector('[data-clear-jobs]')?.addEventListener('click', () => { Object.assign(state, FILTERS, { q: '' }); renderJobs(app); });
+  app.querySelector('[data-sortby]').addEventListener('change', e => {
+    const [k, d] = e.target.value.split(':');
+    if (d) { state.sort = k; state.dir = Number(d); renderJobs(app); }
+  });
   app.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', () => {
     const k = th.dataset.sort;
     state.dir = state.sort === k ? -state.dir : 1;
