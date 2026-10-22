@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FleetLedger · Halvorsen Industrial</title>
+  <meta name="description" content="Multi-job equipment rental cost tracking for industrial construction.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='8' fill='%23f26b1d'/%3E%3Cpath d='M9 9h18v4h-7v10h7v4H9v-4h7V13H9z' fill='white'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/jobs">
+      <svg class="brand-logo" width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
+        <rect width="36" height="36" rx="8" fill="#f26b1d"/>
+        <path d="M9 9h18v4h-7v10h7v4H9v-4h7V13H9z" fill="#fff"/>
+      </svg>
+      <div>
+        <div class="brand-name">Halvorsen Industrial <span class="brand-product">FleetLedger</span></div>
+        <div class="brand-sub">Equipment Rental Control</div>
+      </div>
+    </a>
+    <nav class="topnav" id="topnav"></nav>
+    <div class="topbar-right">
+      <a class="icon-btn" href="#/settings" title="Settings" aria-label="Settings" id="settings-link"></a>
+    </div>
+  </header>
+  <main id="app"></main>
+  <div id="overlay-root"></div>
+  <div id="toast-root"></div>
+
+  <script src="vendor/xlsx.full.min.js" defer></script>
+  <script src="vendor/jspdf.umd.min.js" defer></script>
+  <script src="vendor/jspdf.plugin.autotable.min.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
